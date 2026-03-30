@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { useAppStore } from "../../store/promptStore";
 import type { Folder } from "../../store/promptStore";
 import { Icon } from "./Icon";
+import { DeleteFolderModal } from "./DeleteFolderModal";
 
 function FolderItem({ folder, depth }: { folder: Folder; depth: number }) {
   const {
@@ -11,13 +12,13 @@ function FolderItem({ folder, depth }: { folder: Folder; depth: number }) {
     renamingFolderId,
     selectView,
     renameFolder,
-    deleteFolder,
     setRenamingFolderId,
     moveFolder,
   } = useAppStore();
 
   const [isExpanded, setIsExpanded] = useState(true);
   const [isDragOver, setIsDragOver] = useState(false);
+  const [deletingFolder, setDeletingFolder] = useState<Folder | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const activeTab = tabs.find((t) => t.id === activeTabId);
   const isActive = activeTab?.viewId === folder.id;
@@ -126,7 +127,7 @@ function FolderItem({ folder, depth }: { folder: Folder; depth: number }) {
             <button
               onClick={(e) => {
                 e.stopPropagation();
-                deleteFolder(folder.id);
+                setDeletingFolder(folder);
               }}
               className="p-0.5 text-on-surface-variant hover:text-error transition-colors"
               title="Delete"
@@ -142,6 +143,12 @@ function FolderItem({ folder, depth }: { folder: Folder; depth: number }) {
             <FolderItem key={child.id} folder={child} depth={depth + 1} />
           ))}
         </div>
+      )}
+      {deletingFolder && (
+        <DeleteFolderModal
+          folder={deletingFolder}
+          onClose={() => setDeletingFolder(null)}
+        />
       )}
     </div>
   );
