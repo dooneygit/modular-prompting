@@ -14,9 +14,14 @@ import type {
 import { Icon } from "./Icon";
 
 const PROMPT_DND_TYPE = "application/prompt-json";
+const REORDER_FLAG = "application/prompt-reorder";
 
 function hasPromptDrag(e: React.DragEvent): boolean {
   return e.dataTransfer.types.includes(PROMPT_DND_TYPE);
+}
+
+function isReorderDrag(e: React.DragEvent): boolean {
+  return e.dataTransfer.types.includes(REORDER_FLAG);
 }
 
 function getCharOffsetAtPoint(
@@ -62,17 +67,17 @@ function getCharOffsetAtPoint(
 }
 
 function DropLine() {
-  return (
-    <div className="h-0.5 bg-primary rounded-full my-1" />
-  );
+  return <div className="h-0.5 bg-primary rounded-full my-1" />;
 }
 
 function TextNodeView({
   node,
   highlighted,
+  solo,
 }: {
   node: MasterTextNode;
   highlighted?: boolean;
+  solo?: boolean;
 }) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const updateTextNode = useAppStore((s) => s.updateTextNode);
@@ -81,12 +86,13 @@ function TextNodeView({
     const ta = textareaRef.current;
     if (!ta) return;
     if (!ta.value) {
-      ta.style.height = document.activeElement === ta ? "1.5em" : "4px";
+      ta.style.height =
+        document.activeElement === ta ? "1.5em" : solo ? "" : "4px";
       return;
     }
     ta.style.height = "0";
     ta.style.height = ta.scrollHeight + "px";
-  }, []);
+  }, [solo]);
 
   useLayoutEffect(autoResize, [node.content, autoResize]);
 
@@ -108,10 +114,8 @@ function TextNodeView({
       data-node-type="text"
       rows={1}
       className={`w-full outline-none text-xs font-mono text-on-surface leading-relaxed resize-none bg-transparent block overflow-hidden transition-colors duration-150 ${
-        highlighted
-          ? "bg-primary/10 ring-1 ring-primary/30 rounded"
-          : ""
-      }`}
+        solo && !node.content ? "min-h-[4rem]" : ""
+      } ${highlighted ? "bg-primary/10 ring-1 ring-primary/30 rounded" : ""}`}
     />
   );
 }
@@ -122,7 +126,9 @@ function PromptNodeView({ node }: { node: MasterPromptNode }) {
   const updatePromptNodeContent = useAppStore(
     (s) => s.updatePromptNodeContent
   );
+  const blockRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const [isDragging, setIsDragging] = useState(false);
 
   const autoResize = useCallback(() => {
     const ta = textareaRef.current;
@@ -135,13 +141,54 @@ function PromptNodeView({ node }: { node: MasterPromptNode }) {
     if (node.expanded) autoResize();
   }, [node.content, node.expanded, autoResize]);
 
+  const handleDragStart = useCallback(
+    (e: React.DragEvent) => {
+      if (blockRef.current) {
+        const rect = blockRef.current.getBoundingClientRect();
+        e.dataTransfer.setDragImage(
+          blockRef.current,
+          e.clientX - rect.left,
+          e.clientY - rect.top
+        );
+      }
+      e.dataTransfer.setData(
+        PROMPT_DND_TYPE,
+        JSON.stringify({
+          id: node.promptId,
+          title: node.header,
+          content: node.content,
+          sourceNodeId: node.id,
+          expanded: node.expanded,
+        })
+      );
+      e.dataTransfer.setData(REORDER_FLAG, node.id);
+      e.dataTransfer.effectAllowed = "move";
+      setIsDragging(true);
+    },
+    [node]
+  );
+
+  const handleDragEnd = useCallback(() => setIsDragging(false), []);
+
   return (
     <div
-      className="bg-surface-variant/50 rounded-lg border-l-2 border-primary-dim my-1"
+      ref={blockRef}
+      className={`bg-surface-variant/50 rounded-lg border-l-2 border-primary-dim my-1 transition-opacity duration-150 ${
+        isDragging ? "opacity-40" : ""
+      }`}
       data-node-id={node.id}
       data-node-type="prompt"
     >
       <div className="flex items-center gap-1.5 px-2.5 py-1.5">
+        <div
+          draggable
+          onDragStart={handleDragStart}
+          onDragEnd={handleDragEnd}
+          className="cursor-grab active:cursor-grabbing text-on-surface-variant shrink-0"
+          title="Drag to reorder"
+        >
+          <Icon name="drag_indicator" className="text-[14px]" />
+        </div>
         <span className="text-xs font-semibold text-on-surface truncate flex-1">
           {node.header}
         </span>
@@ -203,6 +250,7 @@ export function MasterPromptBox() {
   const splitTextAndInsertPrompt = useAppStore(
     (s) => s.splitTextAndInsertPrompt
   );
+  const movePromptNode = useAppStore((s) => s.movePromptNode);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const [dropTarget, setDropTarget] = useState<DropTarget>(null);
@@ -212,6 +260,12 @@ export function MasterPromptBox() {
       n.type === "prompt" || (n.type === "text" && n.content.length > 0)
   );
 
+  const isEmpty = masterNodes.every(
+    (n) => n.type === "text" && !n.content
+  );
+
+  const isSolo = masterNodes.length === 1;
+
   const handleCopy = async () => {
     const text = masterNodes
       .map((n) => n.content)
@@ -220,11 +274,40 @@ export function MasterPromptBox() {
     await navigator.clipboard.writeText(text);
   };
 
+  const handleContainerClick = useCallback(
+    (e: React.MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (target.tagName === "TEXTAREA" || target.closest("button")) return;
+
+      const textareas = containerRef.current?.querySelectorAll(
+        "textarea[data-node-type='text']"
+      );
+      if (!textareas?.length) return;
+
+      let closest: HTMLTextAreaElement | null = null;
+      let minDist = Infinity;
+
+      for (const ta of textareas) {
+        const rect = ta.getBoundingClientRect();
+        const dist = Math.abs(
+          e.clientY - (rect.top + rect.height / 2)
+        );
+        if (dist < minDist) {
+          minDist = dist;
+          closest = ta as HTMLTextAreaElement;
+        }
+      }
+
+      closest?.focus();
+    },
+    []
+  );
+
   const handleDragOver = useCallback(
     (e: React.DragEvent) => {
       if (!hasPromptDrag(e)) return;
       e.preventDefault();
-      e.dataTransfer.dropEffect = "copy";
+      e.dataTransfer.dropEffect = isReorderDrag(e) ? "move" : "copy";
 
       if (masterNodes.length === 0) {
         setDropTarget({ type: "gap", index: 0 });
@@ -265,10 +348,7 @@ export function MasterPromptBox() {
 
   const handleDragLeave = useCallback((e: React.DragEvent) => {
     const container = containerRef.current;
-    if (
-      container &&
-      !container.contains(e.relatedTarget as Node)
-    ) {
+    if (container && !container.contains(e.relatedTarget as Node)) {
       setDropTarget(null);
     }
   }, []);
@@ -277,37 +357,69 @@ export function MasterPromptBox() {
     (e: React.DragEvent) => {
       e.preventDefault();
       const raw = e.dataTransfer.getData(PROMPT_DND_TYPE);
+      const currentTarget = dropTarget;
       setDropTarget(null);
       if (!raw) return;
 
-      const prompt = JSON.parse(raw) as {
+      const data = JSON.parse(raw) as {
         id: string;
         title: string;
         content: string;
+        sourceNodeId?: string;
+        expanded?: boolean;
       };
 
-      if (dropTarget?.type === "text-split") {
+      type ResolvedTarget =
+        | { type: "gap"; index: number }
+        | { type: "text-split"; textNodeId: string; charOffset: number };
+
+      let resolved: ResolvedTarget;
+
+      if (currentTarget?.type === "text-split") {
         const textarea = containerRef.current?.querySelector(
-          `textarea[data-node-id="${dropTarget.textNodeId}"]`
+          `textarea[data-node-id="${currentTarget.textNodeId}"]`
         ) as HTMLTextAreaElement | null;
 
-        const offset = textarea
-          ? getCharOffsetAtPoint(textarea, e.clientX, e.clientY)
-          : 0;
+        resolved = {
+          type: "text-split",
+          textNodeId: currentTarget.textNodeId,
+          charOffset: textarea
+            ? getCharOffsetAtPoint(textarea, e.clientX, e.clientY)
+            : 0,
+        };
+      } else {
+        resolved = {
+          type: "gap",
+          index: currentTarget?.index ?? masterNodes.length,
+        };
+      }
 
+      if (data.sourceNodeId) {
+        movePromptNode(data.sourceNodeId, resolved);
+      } else if (resolved.type === "text-split") {
         splitTextAndInsertPrompt(
-          dropTarget.textNodeId,
-          offset,
-          prompt.id,
-          prompt.title,
-          prompt.content
+          resolved.textNodeId,
+          resolved.charOffset,
+          data.id,
+          data.title,
+          data.content
         );
       } else {
-        const index = dropTarget?.index ?? masterNodes.length;
-        insertPromptNode(index, prompt.id, prompt.title, prompt.content);
+        insertPromptNode(
+          resolved.index,
+          data.id,
+          data.title,
+          data.content
+        );
       }
     },
-    [dropTarget, masterNodes.length, insertPromptNode, splitTextAndInsertPrompt]
+    [
+      dropTarget,
+      masterNodes.length,
+      insertPromptNode,
+      splitTextAndInsertPrompt,
+      movePromptNode,
+    ]
   );
 
   return (
@@ -354,10 +466,13 @@ export function MasterPromptBox() {
       <div className="flex min-h-0 flex-1 flex-col px-3 pb-3 pt-2">
         <div
           ref={containerRef}
+          onClick={handleContainerClick}
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
-          className="min-h-0 flex-1 overflow-y-auto rounded-xl border border-outline-variant/20 bg-surface-container-lowest p-3 shadow-inner"
+          className={`min-h-0 flex-1 overflow-y-auto rounded-xl border border-outline-variant/20 bg-surface-container-lowest p-3 shadow-inner relative ${
+            isEmpty ? "cursor-text" : ""
+          }`}
         >
           {masterNodes.map((node: MasterNode, index: number) => (
             <Fragment key={node.id}>
@@ -367,6 +482,7 @@ export function MasterPromptBox() {
                 {node.type === "text" ? (
                   <TextNodeView
                     node={node}
+                    solo={isSolo}
                     highlighted={
                       dropTarget?.type === "text-split" &&
                       dropTarget.textNodeId === node.id
@@ -382,10 +498,12 @@ export function MasterPromptBox() {
           {dropTarget?.type === "gap" &&
             dropTarget.index === masterNodes.length && <DropLine />}
 
-          {masterNodes.length === 0 && !dropTarget && (
-            <p className="text-xs font-mono text-on-surface/50 leading-normal italic text-center py-6">
-              Drag a prompt here to get started...
-            </p>
+          {isEmpty && !dropTarget && (
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+              <p className="text-xs font-mono text-on-surface/50 leading-normal italic">
+                Type or drag a prompt here...
+              </p>
+            </div>
           )}
         </div>
       </div>

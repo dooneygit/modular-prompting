@@ -41,7 +41,9 @@ export interface Tab {
 }
 
 function normalizeNodes(nodes: MasterNode[]): MasterNode[] {
-  if (nodes.length === 0) return [];
+  if (nodes.length === 0) {
+    return [{ type: "text", id: crypto.randomUUID(), content: "" }];
+  }
 
   const result: MasterNode[] = [];
 
@@ -106,6 +108,12 @@ interface AppState {
     promptId: string,
     header: string,
     content: string
+  ) => void;
+  movePromptNode: (
+    sourceNodeId: string,
+    target:
+      | { type: "gap"; index: number }
+      | { type: "text-split"; textNodeId: string; charOffset: number }
   ) => void;
   updateTextNode: (nodeId: string, content: string) => void;
   updatePromptNodeContent: (nodeId: string, content: string) => void;
@@ -286,6 +294,48 @@ export const useAppStore = create<AppState>()(
           };
         }),
 
+      movePromptNode: (sourceNodeId, target) =>
+        set((s) => {
+          const sourceIdx = s.masterNodes.findIndex(
+            (n) => n.id === sourceNodeId
+          );
+          if (sourceIdx === -1) return s;
+          const sourceNode = s.masterNodes[sourceIdx];
+          if (sourceNode.type !== "prompt") return s;
+
+          const without = [...s.masterNodes];
+          without.splice(sourceIdx, 1);
+
+          if (target.type === "gap") {
+            let idx = target.index;
+            if (sourceIdx < idx) idx--;
+            without.splice(idx, 0, sourceNode);
+          } else {
+            const textIdx = without.findIndex(
+              (n) => n.id === target.textNodeId
+            );
+            if (textIdx === -1 || without[textIdx].type !== "text") return s;
+            const textNode = without[textIdx] as MasterTextNode;
+
+            const before: MasterTextNode = {
+              type: "text",
+              id: crypto.randomUUID(),
+              content: textNode.content.slice(0, target.charOffset),
+            };
+            const after: MasterTextNode = {
+              type: "text",
+              id: crypto.randomUUID(),
+              content: textNode.content.slice(target.charOffset),
+            };
+            without.splice(textIdx, 1, before, sourceNode, after);
+          }
+
+          return {
+            undoStack: [...s.undoStack, s.masterNodes].slice(-20),
+            masterNodes: normalizeNodes(without),
+          };
+        }),
+
       updateTextNode: (nodeId, content) =>
         set((s) => ({
           masterNodes: s.masterNodes.map((n) =>
@@ -322,17 +372,22 @@ export const useAppStore = create<AppState>()(
           if (s.undoStack.length === 0) return s;
           const prev = s.undoStack[s.undoStack.length - 1];
           return {
-            masterNodes: prev,
+            masterNodes: normalizeNodes(prev),
             undoStack: s.undoStack.slice(0, -1),
           };
         }),
 
       clearMaster: () =>
         set((s) => {
-          if (s.masterNodes.length === 0) return s;
+          const hasContent = s.masterNodes.some(
+            (n) =>
+              n.type === "prompt" ||
+              (n.type === "text" && n.content.length > 0)
+          );
+          if (!hasContent) return s;
           return {
             undoStack: [...s.undoStack, s.masterNodes].slice(-20),
-            masterNodes: [],
+            masterNodes: normalizeNodes([]),
           };
         }),
 
