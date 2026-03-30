@@ -1,47 +1,59 @@
 import { useAppStore } from "../../store/promptStore";
 import { Icon } from "./Icon";
 
+const VIEW_LABELS: Record<string, string> = {
+  all: "All Prompts",
+  recent: "Recent",
+  favorites: "Favorites",
+};
+
 export function TopNavBar() {
-  const { openTabIds, activeView, folders, selectView, closeTab } =
+  const { tabs, activeTabId, folders, setActiveTabId, closeTab, openNewTab } =
     useAppStore();
 
   return (
     <header className="flex items-center justify-between px-6 w-full h-14 bg-surface/80 backdrop-blur-xl border-b border-outline-variant/10 shrink-0">
       <div className="flex items-center gap-6 overflow-x-auto min-w-0">
-        {openTabIds.map((tabId) => {
-          const folder = folders.find((f) => f.id === tabId);
-          if (!folder) return null;
-          const isActive = activeView === tabId;
+        {tabs.map((tab) => {
+          const label =
+            VIEW_LABELS[tab.viewId] ??
+            folders.find((f) => f.id === tab.viewId)?.name ??
+            "Unknown";
+          const isActive = activeTabId === tab.id;
           return (
             <div
-              key={tabId}
+              key={tab.id}
               className={`flex items-center gap-1.5 pb-4 mt-4 text-[13px] font-medium cursor-pointer transition-colors whitespace-nowrap ${
                 isActive
                   ? "text-primary border-b-2 border-primary"
                   : "text-on-surface-variant hover:text-on-surface"
               }`}
-              onClick={() => selectView(tabId)}
+              onClick={() => setActiveTabId(tab.id)}
             >
-              <span>{folder.name}</span>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  closeTab(tabId);
-                }}
-                className="text-on-surface-variant hover:text-on-surface transition-colors"
-              >
-                <Icon name="close" className="text-[14px]" />
-              </button>
+              <span>{label}</span>
+              {tabs.length > 1 && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    closeTab(tab.id);
+                  }}
+                  className="text-on-surface-variant hover:text-on-surface transition-colors"
+                >
+                  <Icon name="close" className="text-[14px]" />
+                </button>
+              )}
             </div>
           );
         })}
-        {openTabIds.length === 0 && (
-          <span className="text-[13px] text-on-surface-variant/50 italic pb-4 mt-4">
-            Open a folder to begin
-          </span>
-        )}
       </div>
       <div className="flex items-center gap-4 text-primary shrink-0">
+        <button
+          onClick={openNewTab}
+          className="text-on-surface-variant hover:text-on-surface transition-colors"
+          title="New tab"
+        >
+          <Icon name="add" className="text-[20px]" />
+        </button>
         <Icon
           name="help_outline"
           className="text-[20px] cursor-pointer hover:text-on-surface transition-colors"

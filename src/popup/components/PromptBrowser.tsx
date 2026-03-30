@@ -5,14 +5,18 @@ import { PromptCard } from "./PromptCard";
 
 export function PromptBrowser() {
   const {
-    activeView,
+    tabs,
+    activeTabId,
     prompts,
     folders,
-    searchQuery,
     setSearchQuery,
     addPrompt,
     setEditingPromptId,
   } = useAppStore();
+
+  const activeTab = tabs.find((t) => t.id === activeTabId);
+  const activeView = activeTab?.viewId ?? "all";
+  const searchQuery = activeTab?.searchQuery ?? "";
 
   const filteredPrompts = useMemo(() => {
     let list = prompts;
@@ -22,7 +26,7 @@ export function PromptBrowser() {
     } else if (activeView === "recent") {
       list = [...prompts].sort((a, b) => b.updatedAt - a.updatedAt);
     } else if (activeView === "favorites") {
-      list = [];
+      list = prompts.filter((p) => p.favorited);
     } else {
       list = prompts.filter((p) => p.folderId === activeView);
     }
@@ -84,7 +88,11 @@ export function PromptBrowser() {
       {filteredPrompts.length === 0 && (
         <div className="text-center py-12">
           <p className="text-on-surface-variant/50 text-sm">
-            {searchQuery ? "No prompts match your search" : "No prompts yet"}
+            {searchQuery
+              ? "No prompts match your search"
+              : activeView === "favorites"
+                ? "No favorite prompts yet"
+                : "No prompts yet"}
           </p>
         </div>
       )}

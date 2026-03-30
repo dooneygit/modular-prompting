@@ -6,7 +6,8 @@ import { Icon } from "./Icon";
 function FolderItem({ folder, depth }: { folder: Folder; depth: number }) {
   const {
     folders,
-    activeView,
+    tabs,
+    activeTabId,
     renamingFolderId,
     selectView,
     renameFolder,
@@ -18,7 +19,8 @@ function FolderItem({ folder, depth }: { folder: Folder; depth: number }) {
   const [isExpanded, setIsExpanded] = useState(true);
   const [isDragOver, setIsDragOver] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
-  const isActive = activeView === folder.id;
+  const activeTab = tabs.find((t) => t.id === activeTabId);
+  const isActive = activeTab?.viewId === folder.id;
   const isRenaming = renamingFolderId === folder.id;
   const children = folders.filter((f) => f.parentId === folder.id);
 

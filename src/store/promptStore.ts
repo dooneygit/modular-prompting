@@ -14,6 +14,7 @@ export interface Prompt {
   folderId: string;
   createdAt: number;
   updatedAt: number;
+  favorited: boolean;
 }
 
 export interface MasterBlock {
@@ -23,14 +24,21 @@ export interface MasterBlock {
   content: string;
 }
 
+export interface Tab {
+  id: string;
+  viewId: string;
+  searchQuery: string;
+}
+
+const INITIAL_TAB_ID = "default-tab";
+
 interface AppState {
   folders: Folder[];
   prompts: Prompt[];
   masterBlocks: MasterBlock[];
   undoStack: MasterBlock[][];
-  activeView: string;
-  openTabIds: string[];
-  searchQuery: string;
+  tabs: Tab[];
+  activeTabId: string;
   editingPromptId: string | null;
   editingBlockId: string | null;
   renamingFolderId: string | null;
@@ -43,6 +51,7 @@ interface AppState {
   addPrompt: (title: string, content: string, folderId: string) => string;
   updatePrompt: (id: string, title: string, content: string) => void;
   deletePrompt: (id: string) => void;
+  togglePromptFavorite: (id: string) => void;
 
   appendToMaster: (prompt: Prompt) => void;
   removeFromMaster: (blockId: string) => void;
@@ -52,7 +61,8 @@ interface AppState {
   clearMaster: () => void;
 
   selectView: (viewId: string) => void;
-  openTab: (tabId: string) => void;
+  openNewTab: () => void;
+  setActiveTabId: (tabId: string) => void;
   closeTab: (tabId: string) => void;
   setSearchQuery: (query: string) => void;
   setEditingPromptId: (id: string | null) => void;
@@ -72,9 +82,8 @@ export const useAppStore = create<AppState>()(
       prompts: [],
       masterBlocks: [],
       undoStack: [],
-      activeView: "all",
-      openTabIds: [],
-      searchQuery: "",
+      tabs: [{ id: INITIAL_TAB_ID, viewId: "all", searchQuery: "" }],
+      activeTabId: INITIAL_TAB_ID,
       editingPromptId: null,
       editingBlockId: null,
       renamingFolderId: null,
@@ -101,8 +110,9 @@ export const useAppStore = create<AppState>()(
         set((s) => ({
           folders: s.folders.filter((f) => !allIds.includes(f.id)),
           prompts: s.prompts.filter((p) => !allIds.includes(p.folderId)),
-          openTabIds: s.openTabIds.filter((t) => !allIds.includes(t)),
-          activeView: allIds.includes(s.activeView) ? "all" : s.activeView,
+          tabs: s.tabs.map((t) =>
+            allIds.includes(t.viewId) ? { ...t, viewId: "all" } : t
+          ),
         }));
       },
 
@@ -131,6 +141,7 @@ export const useAppStore = create<AppState>()(
               folderId,
               createdAt: Date.now(),
               updatedAt: Date.now(),
+              favorited: false,
             },
           ],
         }));
@@ -151,6 +162,13 @@ export const useAppStore = create<AppState>()(
         set((s) => ({
           prompts: s.prompts.filter((p) => p.id !== id),
           masterBlocks: s.masterBlocks.filter((b) => b.promptId !== id),
+        })),
+
+      togglePromptFavorite: (id) =>
+        set((s) => ({
+          prompts: s.prompts.map((p) =>
+            p.id === id ? { ...p, favorited: !p.favorited } : p
+          ),
         })),
 
       appendToMaster: (prompt) =>
@@ -175,12 +193,8 @@ export const useAppStore = create<AppState>()(
 
       reorderMasterBlocks: (activeId, overId) =>
         set((s) => {
-          const oldIndex = s.masterBlocks.findIndex(
-            (b) => b.id === activeId
-          );
-          const newIndex = s.masterBlocks.findIndex(
-            (b) => b.id === overId
-          );
+          const oldIndex = s.masterBlocks.findIndex((b) => b.id === activeId);
+          const newIndex = s.masterBlocks.findIndex((b) => b.id === overId);
           if (oldIndex === -1 || newIndex === -1) return s;
           const blocks = [...s.masterBlocks];
           const [moved] = blocks.splice(oldIndex, 1);
@@ -218,55 +232,93 @@ export const useAppStore = create<AppState>()(
           };
         }),
 
-      selectView: (viewId) => {
-        const { folders, openTabIds } = get();
-        const isFolder = folders.some((f) => f.id === viewId);
-        if (isFolder && !openTabIds.includes(viewId)) {
-          set((s) => ({
-            activeView: viewId,
-            openTabIds: [...s.openTabIds, viewId],
-            searchQuery: "",
-          }));
-        } else {
-          set({ activeView: viewId, searchQuery: "" });
-        }
+      selectView: (viewId) =>
+        set((s) => ({
+          tabs: s.tabs.map((t) =>
+            t.id === s.activeTabId
+              ? { ...t, viewId, searchQuery: "" }
+              : t
+          ),
+        })),
+
+      openNewTab: () => {
+        const id = crypto.randomUUID();
+        set((s) => ({
+          tabs: [...s.tabs, { id, viewId: "all", searchQuery: "" }],
+          activeTabId: id,
+        }));
       },
 
-      openTab: (tabId) =>
-        set((s) => ({
-          openTabIds: s.openTabIds.includes(tabId)
-            ? s.openTabIds
-            : [...s.openTabIds, tabId],
-          activeView: tabId,
-        })),
+      setActiveTabId: (tabId) => set({ activeTabId: tabId }),
 
       closeTab: (tabId) =>
         set((s) => {
-          const remaining = s.openTabIds.filter((t) => t !== tabId);
-          return {
-            openTabIds: remaining,
-            activeView:
-              s.activeView === tabId
-                ? remaining.length > 0
-                  ? remaining[remaining.length - 1]
-                  : "all"
-                : s.activeView,
-          };
+          if (s.tabs.length <= 1) return s;
+          const idx = s.tabs.findIndex((t) => t.id === tabId);
+          const remaining = s.tabs.filter((t) => t.id !== tabId);
+          const newActiveTabId =
+            s.activeTabId === tabId
+              ? remaining[Math.max(0, idx - 1)]?.id ?? remaining[0].id
+              : s.activeTabId;
+          return { tabs: remaining, activeTabId: newActiveTabId };
         }),
 
-      setSearchQuery: (query) => set({ searchQuery: query }),
+      setSearchQuery: (query) =>
+        set((s) => ({
+          tabs: s.tabs.map((t) =>
+            t.id === s.activeTabId ? { ...t, searchQuery: query } : t
+          ),
+        })),
+
       setEditingPromptId: (id) => set({ editingPromptId: id }),
       setEditingBlockId: (id) => set({ editingBlockId: id }),
       setRenamingFolderId: (id) => set({ renamingFolderId: id }),
     }),
     {
       name: "prompt-vault-storage",
+      version: 2,
+      migrate: (persistedState: unknown, version: number) => {
+        if (version === 0) {
+          const old = persistedState as Record<string, unknown>;
+          const initialTabId = crypto.randomUUID();
+          const rawPrompts = (old.prompts ?? []) as Prompt[];
+          return {
+            folders: old.folders ?? [],
+            prompts: rawPrompts.map((p) => ({
+              ...p,
+              favorited: p.favorited ?? false,
+            })),
+            masterBlocks: old.masterBlocks ?? [],
+            tabs: [
+              {
+                id: initialTabId,
+                viewId:
+                  typeof old.activeView === "string" ? old.activeView : "all",
+                searchQuery: "",
+              },
+            ],
+            activeTabId: initialTabId,
+          };
+        }
+        if (version === 1) {
+          const s = persistedState as { prompts?: Prompt[] };
+          const prompts = s.prompts ?? [];
+          return {
+            ...(persistedState as object),
+            prompts: prompts.map((p) => ({
+              ...p,
+              favorited: p.favorited ?? false,
+            })),
+          };
+        }
+        return persistedState;
+      },
       partialize: (state) => ({
         folders: state.folders,
         prompts: state.prompts,
         masterBlocks: state.masterBlocks,
-        openTabIds: state.openTabIds,
-        activeView: state.activeView,
+        tabs: state.tabs,
+        activeTabId: state.activeTabId,
       }),
     }
   )

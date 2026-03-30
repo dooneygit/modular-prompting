@@ -9,7 +9,8 @@ const NAV_ITEMS = [
 ];
 
 export function SideNavBar() {
-  const { activeView, selectView, addFolder } = useAppStore();
+  const { tabs, activeTabId, selectView, addFolder } = useAppStore();
+  const activeTab = tabs.find((t) => t.id === activeTabId);
 
   return (
     <aside className="flex flex-col h-full py-6 px-4 bg-surface-container-low text-sm tracking-tight w-56 border-r border-outline-variant/20 shrink-0">
@@ -35,7 +36,7 @@ export function SideNavBar() {
             key={item.id}
             onClick={() => selectView(item.id)}
             className={`flex items-center gap-3 px-3 py-2 cursor-pointer rounded-md transition-colors duration-200 active:scale-[0.98] ${
-              activeView === item.id
+              activeTab?.viewId === item.id
                 ? "bg-surface-container-high text-on-surface"
                 : "text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high"
             } ${item.id === "recent" ? "mb-4" : ""}`}
