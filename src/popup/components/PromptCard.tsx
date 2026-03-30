@@ -3,9 +3,7 @@ import type { Prompt } from "../../store/promptStore";
 import { Icon } from "./Icon";
 
 export function PromptCard({ prompt }: { prompt: Prompt }) {
-  const { folders, appendToMaster, setEditingPromptId, deletePrompt } =
-    useAppStore();
-  const folder = folders.find((f) => f.id === prompt.folderId);
+  const { appendToMaster, setEditingPromptId, deletePrompt } = useAppStore();
 
   return (
     <div
@@ -40,13 +38,6 @@ export function PromptCard({ prompt }: { prompt: Prompt }) {
       <p className="text-xs text-on-surface-variant line-clamp-1 leading-relaxed">
         {prompt.content}
       </p>
-      {folder && (
-        <div className="mt-3 flex items-center gap-2">
-          <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-surface-container-highest text-on-surface-variant uppercase tracking-wider font-bold">
-            {folder.name}
-          </span>
-        </div>
-      )}
     </div>
   );
 }

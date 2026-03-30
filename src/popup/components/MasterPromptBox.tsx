@@ -88,21 +88,6 @@ export function MasterPromptBox() {
             </p>
           )}
         </div>
-
-        <div className="mt-4 space-y-3 shrink-0">
-          <button
-            onClick={handleCopy}
-            disabled={masterBlocks.length === 0}
-            className="w-full bg-primary text-on-primary py-2.5 rounded-lg text-sm font-semibold flex items-center justify-center gap-2 hover:bg-primary-fixed-dim transition-all active:scale-[0.98] disabled:opacity-50"
-          >
-            <Icon name="send" className="text-[18px]" />
-            Copy Full Context
-          </button>
-          <p className="text-[10px] text-center text-on-surface-variant/70 italic px-4">
-            Combined prompts are ready to be pasted directly into your LLM of
-            choice.
-          </p>
-        </div>
       </div>
     </aside>
   );

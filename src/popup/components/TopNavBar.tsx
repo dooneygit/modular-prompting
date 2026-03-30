@@ -43,10 +43,6 @@ export function TopNavBar() {
       </div>
       <div className="flex items-center gap-4 text-primary shrink-0">
         <Icon
-          name="notifications"
-          className="text-[20px] cursor-pointer hover:text-on-surface transition-colors"
-        />
-        <Icon
           name="help_outline"
           className="text-[20px] cursor-pointer hover:text-on-surface transition-colors"
         />
