@@ -17,12 +17,22 @@ export interface Prompt {
   favorited: boolean;
 }
 
-export interface MasterBlock {
+export interface MasterTextNode {
+  type: "text";
   id: string;
-  promptId: string;
-  title: string;
   content: string;
 }
+
+export interface MasterPromptNode {
+  type: "prompt";
+  id: string;
+  promptId: string;
+  header: string;
+  content: string;
+  expanded: boolean;
+}
+
+export type MasterNode = MasterTextNode | MasterPromptNode;
 
 export interface Tab {
   id: string;
@@ -30,17 +40,48 @@ export interface Tab {
   searchQuery: string;
 }
 
+function normalizeNodes(nodes: MasterNode[]): MasterNode[] {
+  if (nodes.length === 0) return [];
+
+  const result: MasterNode[] = [];
+
+  for (const node of nodes) {
+    const last = result[result.length - 1];
+
+    if (node.type === "text" && last?.type === "text") {
+      result[result.length - 1] = {
+        ...last,
+        content: last.content + node.content,
+      };
+    } else if (node.type === "prompt" && last?.type === "prompt") {
+      result.push({ type: "text", id: crypto.randomUUID(), content: "" });
+      result.push(node);
+    } else {
+      result.push(node);
+    }
+  }
+
+  if (result[0]?.type === "prompt") {
+    result.unshift({ type: "text", id: crypto.randomUUID(), content: "" });
+  }
+
+  if (result[result.length - 1]?.type === "prompt") {
+    result.push({ type: "text", id: crypto.randomUUID(), content: "" });
+  }
+
+  return result;
+}
+
 const INITIAL_TAB_ID = "default-tab";
 
 interface AppState {
   folders: Folder[];
   prompts: Prompt[];
-  masterBlocks: MasterBlock[];
-  undoStack: MasterBlock[][];
+  masterNodes: MasterNode[];
+  undoStack: MasterNode[][];
   tabs: Tab[];
   activeTabId: string;
   editingPromptId: string | null;
-  editingBlockId: string | null;
   renamingFolderId: string | null;
 
   addFolder: (name: string, parentId?: string | null) => string;
@@ -53,10 +94,23 @@ interface AppState {
   deletePrompt: (id: string) => void;
   togglePromptFavorite: (id: string) => void;
 
-  appendToMaster: (prompt: Prompt) => void;
-  removeFromMaster: (blockId: string) => void;
-  reorderMasterBlocks: (activeId: string, overId: string) => void;
-  updateMasterBlock: (blockId: string, content: string) => void;
+  insertPromptNode: (
+    index: number,
+    promptId: string,
+    header: string,
+    content: string
+  ) => void;
+  splitTextAndInsertPrompt: (
+    textNodeId: string,
+    charOffset: number,
+    promptId: string,
+    header: string,
+    content: string
+  ) => void;
+  updateTextNode: (nodeId: string, content: string) => void;
+  updatePromptNodeContent: (nodeId: string, content: string) => void;
+  toggleNodeExpanded: (nodeId: string) => void;
+  removeNode: (nodeId: string) => void;
   undoMaster: () => void;
   clearMaster: () => void;
 
@@ -66,7 +120,6 @@ interface AppState {
   closeTab: (tabId: string) => void;
   setSearchQuery: (query: string) => void;
   setEditingPromptId: (id: string | null) => void;
-  setEditingBlockId: (id: string | null) => void;
   setRenamingFolderId: (id: string | null) => void;
 }
 
@@ -80,12 +133,11 @@ export const useAppStore = create<AppState>()(
     (set, get) => ({
       folders: [],
       prompts: [],
-      masterBlocks: [],
+      masterNodes: [],
       undoStack: [],
       tabs: [{ id: INITIAL_TAB_ID, viewId: "all", searchQuery: "" }],
       activeTabId: INITIAL_TAB_ID,
       editingPromptId: null,
-      editingBlockId: null,
       renamingFolderId: null,
 
       addFolder: (name, parentId = null) => {
@@ -161,7 +213,11 @@ export const useAppStore = create<AppState>()(
       deletePrompt: (id) =>
         set((s) => ({
           prompts: s.prompts.filter((p) => p.id !== id),
-          masterBlocks: s.masterBlocks.filter((b) => b.promptId !== id),
+          masterNodes: normalizeNodes(
+            s.masterNodes.filter(
+              (n) => !(n.type === "prompt" && n.promptId === id)
+            )
+          ),
         })),
 
       togglePromptFavorite: (id) =>
@@ -171,46 +227,94 @@ export const useAppStore = create<AppState>()(
           ),
         })),
 
-      appendToMaster: (prompt) =>
-        set((s) => ({
-          undoStack: [...s.undoStack, s.masterBlocks].slice(-20),
-          masterBlocks: [
-            ...s.masterBlocks,
-            {
-              id: crypto.randomUUID(),
-              promptId: prompt.id,
-              title: prompt.title,
-              content: prompt.content,
-            },
-          ],
-        })),
-
-      removeFromMaster: (blockId) =>
-        set((s) => ({
-          undoStack: [...s.undoStack, s.masterBlocks].slice(-20),
-          masterBlocks: s.masterBlocks.filter((b) => b.id !== blockId),
-        })),
-
-      reorderMasterBlocks: (activeId, overId) =>
+      insertPromptNode: (index, promptId, header, content) =>
         set((s) => {
-          const oldIndex = s.masterBlocks.findIndex((b) => b.id === activeId);
-          const newIndex = s.masterBlocks.findIndex((b) => b.id === overId);
-          if (oldIndex === -1 || newIndex === -1) return s;
-          const blocks = [...s.masterBlocks];
-          const [moved] = blocks.splice(oldIndex, 1);
-          blocks.splice(newIndex, 0, moved);
+          const node: MasterPromptNode = {
+            type: "prompt",
+            id: crypto.randomUUID(),
+            promptId,
+            header,
+            content,
+            expanded: false,
+          };
+          const next = [...s.masterNodes];
+          next.splice(index, 0, node);
           return {
-            undoStack: [...s.undoStack, s.masterBlocks].slice(-20),
-            masterBlocks: blocks,
+            undoStack: [...s.undoStack, s.masterNodes].slice(-20),
+            masterNodes: normalizeNodes(next),
           };
         }),
 
-      updateMasterBlock: (blockId, content) =>
+      splitTextAndInsertPrompt: (
+        textNodeId,
+        charOffset,
+        promptId,
+        header,
+        content
+      ) =>
+        set((s) => {
+          const idx = s.masterNodes.findIndex((n) => n.id === textNodeId);
+          if (idx === -1) return s;
+          const target = s.masterNodes[idx];
+          if (target.type !== "text") return s;
+
+          const before: MasterTextNode = {
+            type: "text",
+            id: crypto.randomUUID(),
+            content: target.content.slice(0, charOffset),
+          };
+          const prompt: MasterPromptNode = {
+            type: "prompt",
+            id: crypto.randomUUID(),
+            promptId,
+            header,
+            content,
+            expanded: false,
+          };
+          const after: MasterTextNode = {
+            type: "text",
+            id: crypto.randomUUID(),
+            content: target.content.slice(charOffset),
+          };
+
+          const next = [...s.masterNodes];
+          next.splice(idx, 1, before, prompt, after);
+
+          return {
+            undoStack: [...s.undoStack, s.masterNodes].slice(-20),
+            masterNodes: normalizeNodes(next),
+          };
+        }),
+
+      updateTextNode: (nodeId, content) =>
         set((s) => ({
-          masterBlocks: s.masterBlocks.map((b) =>
-            b.id === blockId ? { ...b, content } : b
+          masterNodes: s.masterNodes.map((n) =>
+            n.id === nodeId && n.type === "text" ? { ...n, content } : n
           ),
-          editingBlockId: null,
+        })),
+
+      updatePromptNodeContent: (nodeId, content) =>
+        set((s) => ({
+          masterNodes: s.masterNodes.map((n) =>
+            n.id === nodeId && n.type === "prompt" ? { ...n, content } : n
+          ),
+        })),
+
+      toggleNodeExpanded: (nodeId) =>
+        set((s) => ({
+          masterNodes: s.masterNodes.map((n) =>
+            n.id === nodeId && n.type === "prompt"
+              ? { ...n, expanded: !n.expanded }
+              : n
+          ),
+        })),
+
+      removeNode: (nodeId) =>
+        set((s) => ({
+          undoStack: [...s.undoStack, s.masterNodes].slice(-20),
+          masterNodes: normalizeNodes(
+            s.masterNodes.filter((n) => n.id !== nodeId)
+          ),
         })),
 
       undoMaster: () =>
@@ -218,17 +322,17 @@ export const useAppStore = create<AppState>()(
           if (s.undoStack.length === 0) return s;
           const prev = s.undoStack[s.undoStack.length - 1];
           return {
-            masterBlocks: prev,
+            masterNodes: prev,
             undoStack: s.undoStack.slice(0, -1),
           };
         }),
 
       clearMaster: () =>
         set((s) => {
-          if (s.masterBlocks.length === 0) return s;
+          if (s.masterNodes.length === 0) return s;
           return {
-            undoStack: [...s.undoStack, s.masterBlocks].slice(-20),
-            masterBlocks: [],
+            undoStack: [...s.undoStack, s.masterNodes].slice(-20),
+            masterNodes: [],
           };
         }),
 
@@ -271,52 +375,76 @@ export const useAppStore = create<AppState>()(
         })),
 
       setEditingPromptId: (id) => set({ editingPromptId: id }),
-      setEditingBlockId: (id) => set({ editingBlockId: id }),
       setRenamingFolderId: (id) => set({ renamingFolderId: id }),
     }),
     {
       name: "prompt-vault-storage",
-      version: 2,
+      version: 3,
       migrate: (persistedState: unknown, version: number) => {
-        if (version === 0) {
-          const old = persistedState as Record<string, unknown>;
+        let state = persistedState as Record<string, unknown>;
+
+        if (version < 1) {
           const initialTabId = crypto.randomUUID();
-          const rawPrompts = (old.prompts ?? []) as Prompt[];
-          return {
-            folders: old.folders ?? [],
+          const rawPrompts = (state.prompts ?? []) as Prompt[];
+          state = {
+            ...state,
             prompts: rawPrompts.map((p) => ({
               ...p,
               favorited: p.favorited ?? false,
             })),
-            masterBlocks: old.masterBlocks ?? [],
             tabs: [
               {
                 id: initialTabId,
                 viewId:
-                  typeof old.activeView === "string" ? old.activeView : "all",
+                  typeof state.activeView === "string"
+                    ? state.activeView
+                    : "all",
                 searchQuery: "",
               },
             ],
             activeTabId: initialTabId,
           };
         }
-        if (version === 1) {
-          const s = persistedState as { prompts?: Prompt[] };
-          const prompts = s.prompts ?? [];
-          return {
-            ...(persistedState as object),
+
+        if (version < 2) {
+          const prompts = (state.prompts ?? []) as Prompt[];
+          state = {
+            ...state,
             prompts: prompts.map((p) => ({
               ...p,
               favorited: p.favorited ?? false,
             })),
           };
         }
-        return persistedState;
+
+        if (version < 3) {
+          interface OldBlock {
+            id: string;
+            promptId: string;
+            title: string;
+            content: string;
+          }
+          const oldBlocks = (state.masterBlocks ?? []) as OldBlock[];
+          const converted: MasterNode[] = oldBlocks.map((b) => ({
+            type: "prompt" as const,
+            id: b.id,
+            promptId: b.promptId,
+            header: b.title,
+            content: b.content,
+            expanded: false,
+          }));
+          state = {
+            ...state,
+            masterNodes: normalizeNodes(converted),
+          };
+        }
+
+        return state;
       },
       partialize: (state) => ({
         folders: state.folders,
         prompts: state.prompts,
-        masterBlocks: state.masterBlocks,
+        masterNodes: state.masterNodes,
         tabs: state.tabs,
         activeTabId: state.activeTabId,
       }),

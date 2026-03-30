@@ -38,6 +38,7 @@ function FolderItem({ folder, depth }: { folder: Folder; depth: number }) {
   };
 
   const handleDragOver = (e: React.DragEvent) => {
+    if (!e.dataTransfer.types.includes("folder-id")) return;
     e.preventDefault();
     e.stopPropagation();
     setIsDragOver(true);
@@ -159,6 +160,7 @@ export function FolderTree() {
   const rootFolders = folders.filter((f) => f.parentId === null);
 
   const handleRootDragOver = (e: React.DragEvent) => {
+    if (!e.dataTransfer.types.includes("folder-id")) return;
     e.preventDefault();
   };
 

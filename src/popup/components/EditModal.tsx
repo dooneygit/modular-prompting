@@ -2,43 +2,27 @@ import { useState } from "react";
 import { useAppStore } from "../../store/promptStore";
 
 export function EditModal() {
-  const {
-    editingPromptId,
-    editingBlockId,
-    prompts,
-    masterBlocks,
-    updatePrompt,
-    updateMasterBlock,
-    setEditingPromptId,
-    setEditingBlockId,
-  } = useAppStore();
+  const { editingPromptId, prompts, updatePrompt, setEditingPromptId } =
+    useAppStore();
 
   const prompt = editingPromptId
     ? prompts.find((p) => p.id === editingPromptId)
     : null;
-  const block = editingBlockId
-    ? masterBlocks.find((b) => b.id === editingBlockId)
-    : null;
 
   const [title, setTitle] = useState(prompt?.title ?? "");
-  const [content, setContent] = useState(
-    prompt?.content ?? block?.content ?? ""
-  );
+  const [content, setContent] = useState(prompt?.content ?? "");
 
   const handleSave = () => {
     if (prompt) {
       updatePrompt(prompt.id, title.trim() || "Untitled", content);
-    } else if (block) {
-      updateMasterBlock(block.id, content);
     }
   };
 
   const handleClose = () => {
     setEditingPromptId(null);
-    setEditingBlockId(null);
   };
 
-  if (!prompt && !block) return null;
+  if (!prompt) return null;
 
   return (
     <div
@@ -50,18 +34,16 @@ export function EditModal() {
         onClick={(e) => e.stopPropagation()}
       >
         <h2 className="text-sm font-bold text-on-surface uppercase tracking-wider mb-4">
-          {prompt ? "Edit Prompt" : "Edit Block"}
+          Edit Prompt
         </h2>
 
-        {prompt && (
-          <input
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            className="w-full bg-surface-container-highest text-on-surface text-sm px-3 py-2 rounded mb-3 border-none outline-none focus:ring-1 focus:ring-outline"
-            placeholder="Prompt title..."
-            autoFocus
-          />
-        )}
+        <input
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          className="w-full bg-surface-container-highest text-on-surface text-sm px-3 py-2 rounded mb-3 border-none outline-none focus:ring-1 focus:ring-outline"
+          placeholder="Prompt title..."
+          autoFocus
+        />
 
         <textarea
           value={content}
@@ -69,7 +51,6 @@ export function EditModal() {
           rows={8}
           className="w-full bg-surface-container-highest text-on-surface text-sm px-3 py-2 rounded border-none outline-none focus:ring-1 focus:ring-outline resize-none"
           placeholder="Prompt content..."
-          autoFocus={!prompt}
         />
 
         <div className="flex justify-end gap-2 mt-4">

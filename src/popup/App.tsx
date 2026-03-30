@@ -6,7 +6,7 @@ import { MasterPromptBox } from "./components/MasterPromptBox";
 import { EditModal } from "./components/EditModal";
 
 export default function App() {
-  const { editingPromptId, editingBlockId } = useAppStore();
+  const editingPromptId = useAppStore((s) => s.editingPromptId);
 
   return (
     <div className="flex h-[562px] w-[800px] mx-auto border border-outline-variant/10 shadow-2xl overflow-hidden">
@@ -16,9 +16,7 @@ export default function App() {
         <PromptBrowser />
       </main>
       <MasterPromptBox />
-      {(editingPromptId || editingBlockId) && (
-        <EditModal key={editingPromptId || editingBlockId || ""} />
-      )}
+      {editingPromptId && <EditModal key={editingPromptId} />}
     </div>
   );
 }

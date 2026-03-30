@@ -1,21 +1,40 @@
+import { useState } from "react";
 import { useAppStore } from "../../store/promptStore";
 import type { Prompt } from "../../store/promptStore";
 import { Icon } from "./Icon";
 
-export function PromptCard({ prompt }: { prompt: Prompt }) {
-  const {
-    appendToMaster,
-    setEditingPromptId,
-    deletePrompt,
-    togglePromptFavorite,
-  } = useAppStore();
+const PROMPT_DND_TYPE = "application/prompt-json";
 
+export function PromptCard({ prompt }: { prompt: Prompt }) {
+  const { setEditingPromptId, deletePrompt, togglePromptFavorite } =
+    useAppStore();
+
+  const [isDragging, setIsDragging] = useState(false);
   const favorited = prompt.favorited;
+
+  const handleDragStart = (e: React.DragEvent) => {
+    e.dataTransfer.setData(
+      PROMPT_DND_TYPE,
+      JSON.stringify({
+        id: prompt.id,
+        title: prompt.title,
+        content: prompt.content,
+      })
+    );
+    e.dataTransfer.effectAllowed = "copy";
+    setIsDragging(true);
+  };
+
+  const handleDragEnd = () => setIsDragging(false);
 
   return (
     <div
-      onClick={() => appendToMaster(prompt)}
-      className="p-3 bg-surface-container rounded-lg border border-transparent hover:border-outline-variant/30 hover:bg-surface-container-high transition-all group cursor-pointer"
+      draggable
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
+      className={`p-3 bg-surface-container rounded-lg border border-transparent hover:border-outline-variant/30 hover:bg-surface-container-high transition-all group cursor-grab active:cursor-grabbing ${
+        isDragging ? "opacity-50" : ""
+      }`}
     >
       <div className="flex items-start justify-between gap-2 mb-2">
         <h3 className="text-sm font-semibold text-on-surface truncate min-w-0 flex-1">
@@ -25,7 +44,9 @@ export function PromptCard({ prompt }: { prompt: Prompt }) {
           <button
             type="button"
             aria-pressed={favorited}
-            aria-label={favorited ? "Remove from favorites" : "Add to favorites"}
+            aria-label={
+              favorited ? "Remove from favorites" : "Add to favorites"
+            }
             onClick={(e) => {
               e.stopPropagation();
               togglePromptFavorite(prompt.id);
