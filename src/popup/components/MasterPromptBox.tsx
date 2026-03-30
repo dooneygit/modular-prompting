@@ -15,8 +15,13 @@ import { SortableBlock } from "./SortableBlock";
 import { Icon } from "./Icon";
 
 export function MasterPromptBox() {
-  const { masterBlocks, undoStack, reorderMasterBlocks, undoMaster } =
-    useAppStore();
+  const {
+    masterBlocks,
+    undoStack,
+    reorderMasterBlocks,
+    undoMaster,
+    clearMaster,
+  } = useAppStore();
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
@@ -36,34 +41,47 @@ export function MasterPromptBox() {
 
   return (
     <aside className="w-72 border-l border-outline-variant/10 bg-surface-container-low flex flex-col shrink-0">
-      <div className="p-4 border-b border-outline-variant/10">
-        <h2 className="text-xs font-bold text-on-surface-variant uppercase tracking-widest">
-          Active Prompt Builder
+      <div className="flex items-center gap-2 border-b border-outline-variant/10 px-3 py-2">
+        <h2 className="min-w-0 flex-1 truncate text-xs font-bold uppercase tracking-widest text-on-surface-variant">
+          Master Prompt
         </h2>
+        <div
+          className="flex shrink-0 items-center gap-1"
+          role="toolbar"
+          aria-label="Master prompt actions"
+        >
+          <button
+            type="button"
+            onClick={undoMaster}
+            disabled={undoStack.length === 0}
+            className="rounded border border-outline-variant/20 p-1 text-on-surface-variant transition-colors duration-200 ease-in-out hover:border-outline-variant/30 hover:text-on-surface disabled:opacity-30"
+            title="Undo"
+          >
+            <Icon name="undo" className="text-[16px]" />
+          </button>
+          <button
+            type="button"
+            onClick={handleCopy}
+            disabled={masterBlocks.length === 0}
+            className="rounded border border-outline-variant/20 p-1 text-on-surface-variant transition-colors duration-200 ease-in-out hover:border-outline-variant/30 hover:text-on-surface disabled:opacity-30"
+            title="Copy to Clipboard"
+          >
+            <Icon name="content_copy" className="text-[16px]" />
+          </button>
+          <button
+            type="button"
+            onClick={clearMaster}
+            disabled={masterBlocks.length === 0}
+            className="rounded border border-outline-variant/20 p-1 text-on-surface-variant transition-colors duration-200 ease-in-out hover:border-outline-variant/30 hover:text-error disabled:opacity-30"
+            title="Clear prompt"
+          >
+            <Icon name="delete" className="text-[16px]" />
+          </button>
+        </div>
       </div>
 
-      <div className="flex-1 p-4 relative flex flex-col min-h-0">
-        <div className="flex-1 bg-surface-container-lowest rounded-xl p-4 border border-outline-variant/20 shadow-inner relative group/box overflow-y-auto">
-          {/* Corner Actions */}
-          <div className="absolute top-2 right-2 flex gap-1 bg-surface-container-highest/80 backdrop-blur-md p-1 rounded-lg opacity-0 group-hover/box:opacity-100 transition-all z-10">
-            <button
-              onClick={undoMaster}
-              disabled={undoStack.length === 0}
-              className="p-1 text-on-surface-variant hover:text-on-surface disabled:opacity-30 transition-colors"
-              title="Undo"
-            >
-              <Icon name="undo" className="text-[18px]" />
-            </button>
-            <button
-              onClick={handleCopy}
-              disabled={masterBlocks.length === 0}
-              className="p-1 text-on-surface-variant hover:text-on-surface disabled:opacity-30 transition-colors"
-              title="Copy to Clipboard"
-            >
-              <Icon name="content_copy" className="text-[18px]" />
-            </button>
-          </div>
-
+      <div className="flex min-h-0 flex-1 flex-col px-3 pb-3 pt-2">
+        <div className="min-h-0 flex-1 overflow-y-auto rounded-xl border border-outline-variant/20 bg-surface-container-lowest p-3 shadow-inner">
           {/* Sortable Blocks */}
           <DndContext
             sensors={sensors}
@@ -83,7 +101,7 @@ export function MasterPromptBox() {
           </DndContext>
 
           {masterBlocks.length === 0 && (
-            <p className="text-xs font-mono text-on-surface/50 leading-normal italic text-center py-8">
+            <p className="text-xs font-mono text-on-surface/50 leading-normal italic text-center py-6">
               Click a prompt to add it here...
             </p>
           )}

@@ -49,6 +49,7 @@ interface AppState {
   reorderMasterBlocks: (activeId: string, overId: string) => void;
   updateMasterBlock: (blockId: string, content: string) => void;
   undoMaster: () => void;
+  clearMaster: () => void;
 
   selectView: (viewId: string) => void;
   openTab: (tabId: string) => void;
@@ -205,6 +206,15 @@ export const useAppStore = create<AppState>()(
           return {
             masterBlocks: prev,
             undoStack: s.undoStack.slice(0, -1),
+          };
+        }),
+
+      clearMaster: () =>
+        set((s) => {
+          if (s.masterBlocks.length === 0) return s;
+          return {
+            undoStack: [...s.undoStack, s.masterBlocks].slice(-20),
+            masterBlocks: [],
           };
         }),
 
