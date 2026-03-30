@@ -19,13 +19,10 @@ export function SideNavBar() {
         <div className="w-8 h-8 rounded-full bg-surface-container-highest flex items-center justify-center border border-outline-variant/20">
           <Icon name="terminal" className="text-primary text-sm" />
         </div>
-        <div>
-          <h1 className="text-lg font-bold text-on-surface tracking-tighter">
-            Prompt Library
+        <div className="min-w-0">
+          <h1 className="truncate text-xs font-bold uppercase tracking-widest text-on-surface-variant">
+            Quick prompting
           </h1>
-          <p className="text-[10px] uppercase tracking-widest text-on-surface-variant font-semibold">
-            Digital Curator
-          </p>
         </div>
       </div>
 
