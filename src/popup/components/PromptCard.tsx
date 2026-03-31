@@ -27,6 +27,12 @@ export function PromptCard({ prompt }: { prompt: Prompt }) {
 
   const handleDragEnd = () => setIsDragging(false);
 
+  const handleCopy = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const text = prompt.content.trim() ? prompt.content : prompt.title;
+    await navigator.clipboard.writeText(text);
+  };
+
   return (
     <div
       draggable
@@ -36,11 +42,21 @@ export function PromptCard({ prompt }: { prompt: Prompt }) {
         isDragging ? "opacity-50" : ""
       }`}
     >
-      <div className="flex items-start justify-between gap-2 mb-2">
-        <h3 className="text-sm font-semibold text-on-surface truncate min-w-0 flex-1">
-          {prompt.title}
-        </h3>
-        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+      <div className="flex items-start gap-2">
+        <button
+          type="button"
+          onClick={() => setEditingPromptId(prompt.id)}
+          className="flex-1 min-w-0 text-left rounded-md p-0 bg-transparent border-none cursor-pointer focus-visible:outline focus-visible:outline-1 focus-visible:outline-outline focus-visible:outline-offset-2"
+          aria-label={`Edit prompt: ${prompt.title}`}
+        >
+          <h3 className="text-sm font-semibold text-on-surface truncate mb-2">
+            {prompt.title}
+          </h3>
+          <p className="text-xs text-on-surface-variant line-clamp-1 leading-relaxed">
+            {prompt.content}
+          </p>
+        </button>
+        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0 self-start">
           <button
             type="button"
             aria-pressed={favorited}
@@ -61,16 +77,15 @@ export function PromptCard({ prompt }: { prompt: Prompt }) {
           </button>
           <button
             type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              setEditingPromptId(prompt.id);
-            }}
+            aria-label="Copy prompt to clipboard"
+            onClick={handleCopy}
             className="p-1 text-on-surface-variant hover:text-primary transition-colors"
           >
-            <Icon name="edit" className="text-[16px]" />
+            <Icon name="content_copy" className="text-[16px]" />
           </button>
           <button
             type="button"
+            aria-label="Delete prompt"
             onClick={(e) => {
               e.stopPropagation();
               deletePrompt(prompt.id);
@@ -81,9 +96,6 @@ export function PromptCard({ prompt }: { prompt: Prompt }) {
           </button>
         </div>
       </div>
-      <p className="text-xs text-on-surface-variant line-clamp-1 leading-relaxed">
-        {prompt.content}
-      </p>
     </div>
   );
 }

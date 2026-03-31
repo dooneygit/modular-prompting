@@ -501,7 +501,7 @@ export function MasterPromptBox() {
           {isEmpty && !dropTarget && (
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
               <p className="text-xs font-mono text-on-surface/50 leading-normal italic">
-                Type or drag a prompt here...
+                Type and drag prompts here...
               </p>
             </div>
           )}
