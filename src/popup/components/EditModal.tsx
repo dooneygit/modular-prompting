@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useAppStore } from "../../store/promptStore";
 
 export function EditModal() {
@@ -11,6 +11,7 @@ export function EditModal() {
 
   const [title, setTitle] = useState(prompt?.title ?? "");
   const [content, setContent] = useState(prompt?.content ?? "");
+  const mouseDownInsideRef = useRef(false);
 
   const handleSave = () => {
     if (prompt) {
@@ -27,10 +28,12 @@ export function EditModal() {
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
-      onClick={handleClose}
+      onMouseDown={() => { mouseDownInsideRef.current = false; }}
+      onClick={() => { if (!mouseDownInsideRef.current) handleClose(); }}
     >
       <div
         className="bg-surface-container rounded-xl p-6 w-96 max-h-[80%] border border-outline-variant/20 shadow-2xl"
+        onMouseDown={(e) => { e.stopPropagation(); mouseDownInsideRef.current = true; }}
         onClick={(e) => e.stopPropagation()}
       >
         <h2 className="text-sm font-bold text-on-surface uppercase tracking-wider mb-4">
