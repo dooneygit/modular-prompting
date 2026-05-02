@@ -29,7 +29,6 @@ export interface MasterPromptNode {
   promptId: string;
   header: string;
   content: string;
-  expanded: boolean;
 }
 
 export type MasterNode = MasterTextNode | MasterPromptNode;
@@ -96,28 +95,19 @@ interface AppState {
   deletePrompt: (id: string) => void;
   togglePromptFavorite: (id: string) => void;
 
-  insertPromptNode: (
-    index: number,
+  insertPromptInline: (
+    targetNodeId: string,
+    offset: number,
     promptId: string,
     header: string,
     content: string
   ) => void;
-  splitTextAndInsertPrompt: (
-    textNodeId: string,
-    charOffset: number,
-    promptId: string,
-    header: string,
-    content: string
-  ) => void;
-  movePromptNode: (
+  movePromptInline: (
     sourceNodeId: string,
-    target:
-      | { type: "gap"; index: number }
-      | { type: "text-split"; textNodeId: string; charOffset: number }
+    targetNodeId: string,
+    offset: number
   ) => void;
-  updateTextNode: (nodeId: string, content: string) => void;
-  updatePromptNodeContent: (nodeId: string, content: string) => void;
-  toggleNodeExpanded: (nodeId: string) => void;
+  setMasterNodes: (nodes: MasterNode[]) => void;
   removeNode: (nodeId: string) => void;
   undoMaster: () => void;
   clearMaster: () => void;
@@ -235,99 +225,89 @@ export const useAppStore = create<AppState>()(
           ),
         })),
 
-      insertPromptNode: (index, promptId, header, content) =>
+      insertPromptInline: (targetNodeId, offset, promptId, header, content) =>
         set((s) => {
-          const node: MasterPromptNode = {
-            type: "prompt",
-            id: crypto.randomUUID(),
-            promptId,
-            header,
-            content,
-            expanded: false,
-          };
-          const next = [...s.masterNodes];
-          next.splice(index, 0, node);
-          return {
-            undoStack: [...s.undoStack, s.masterNodes].slice(-20),
-            masterNodes: normalizeNodes(next),
-          };
-        }),
-
-      splitTextAndInsertPrompt: (
-        textNodeId,
-        charOffset,
-        promptId,
-        header,
-        content
-      ) =>
-        set((s) => {
-          const idx = s.masterNodes.findIndex((n) => n.id === textNodeId);
+          const idx = s.masterNodes.findIndex((n) => n.id === targetNodeId);
           if (idx === -1) return s;
           const target = s.masterNodes[idx];
-          if (target.type !== "text") return s;
 
-          const before: MasterTextNode = {
-            type: "text",
-            id: crypto.randomUUID(),
-            content: target.content.slice(0, charOffset),
-          };
-          const prompt: MasterPromptNode = {
-            type: "prompt",
-            id: crypto.randomUUID(),
-            promptId,
-            header,
-            content,
-            expanded: false,
-          };
-          const after: MasterTextNode = {
-            type: "text",
-            id: crypto.randomUUID(),
-            content: target.content.slice(charOffset),
-          };
-
-          const next = [...s.masterNodes];
-          next.splice(idx, 1, before, prompt, after);
-
-          return {
-            undoStack: [...s.undoStack, s.masterNodes].slice(-20),
-            masterNodes: normalizeNodes(next),
-          };
-        }),
-
-      movePromptNode: (sourceNodeId, target) =>
-        set((s) => {
-          const sourceIdx = s.masterNodes.findIndex(
-            (n) => n.id === sourceNodeId
-          );
-          if (sourceIdx === -1) return s;
-          const sourceNode = s.masterNodes[sourceIdx];
-          if (sourceNode.type !== "prompt") return s;
-
-          const without = [...s.masterNodes];
-          without.splice(sourceIdx, 1);
-
-          if (target.type === "gap") {
-            let idx = target.index;
-            if (sourceIdx < idx) idx--;
-            without.splice(idx, 0, sourceNode);
-          } else {
-            const textIdx = without.findIndex(
-              (n) => n.id === target.textNodeId
-            );
-            if (textIdx === -1 || without[textIdx].type !== "text") return s;
-            const textNode = without[textIdx] as MasterTextNode;
-
+          if (target.type === "text") {
             const before: MasterTextNode = {
               type: "text",
               id: crypto.randomUUID(),
-              content: textNode.content.slice(0, target.charOffset),
+              content: target.content.slice(0, offset),
+            };
+            const prompt: MasterPromptNode = {
+              type: "prompt",
+              id: crypto.randomUUID(),
+              promptId,
+              header,
+              content,
             };
             const after: MasterTextNode = {
               type: "text",
               id: crypto.randomUUID(),
-              content: textNode.content.slice(target.charOffset),
+              content: target.content.slice(offset),
             };
-            without.splice(textIdx, 1, before, sourceNode, after);
+            const next = [...s.masterNodes];
+            next.splice(idx, 1, before, prompt, after);
+            return {
+              undoStack: [...s.undoStack, s.masterNodes].slice(-20),
+              masterNodes: normalizeNodes(next),
+            };
+          }
+
+          const merged =
+            target.content.slice(0, offset) +
+            content +
+            target.content.slice(offset);
+          return {
+            undoStack: [...s.undoStack, s.masterNodes].slice(-20),
+            masterNodes: s.masterNodes.map((n) =>
+              n.id === targetNodeId && n.type === "prompt"
+                ? { ...n, content: merged }
+                : n
+            ),
+          };
+        }),
+
+      movePromptInline: (sourceNodeId, targetNodeId, offset) =>
+        set((s) => {
+          if (sourceNodeId === targetNodeId) return s;
+          const sourceIdx = s.masterNodes.findIndex(
+            (n) => n.id === sourceNodeId
+          );
+          if (sourceIdx === -1) return s;
+          const source = s.masterNodes[sourceIdx];
+          if (source.type !== "prompt") return s;
+
+          const without = [...s.masterNodes];
+          without.splice(sourceIdx, 1);
+
+          const targetIdx = without.findIndex((n) => n.id === targetNodeId);
+          if (targetIdx === -1) return s;
+          const target = without[targetIdx];
+
+          if (target.type === "text") {
+            const before: MasterTextNode = {
+              type: "text",
+              id: crypto.randomUUID(),
+              content: target.content.slice(0, offset),
+            };
+            const after: MasterTextNode = {
+              type: "text",
+              id: crypto.randomUUID(),
+              content: target.content.slice(offset),
+            };
+            without.splice(targetIdx, 1, before, source, after);
+          } else {
+            without[targetIdx] = {
+              ...target,
+              content:
+                target.content.slice(0, offset) +
+                source.content +
+                target.content.slice(offset),
+            };
           }
 
           return {
@@ -336,28 +316,23 @@ export const useAppStore = create<AppState>()(
           };
         }),
 
-      updateTextNode: (nodeId, content) =>
-        set((s) => ({
-          masterNodes: s.masterNodes.map((n) =>
-            n.id === nodeId && n.type === "text" ? { ...n, content } : n
-          ),
-        })),
-
-      updatePromptNodeContent: (nodeId, content) =>
-        set((s) => ({
-          masterNodes: s.masterNodes.map((n) =>
-            n.id === nodeId && n.type === "prompt" ? { ...n, content } : n
-          ),
-        })),
-
-      toggleNodeExpanded: (nodeId) =>
-        set((s) => ({
-          masterNodes: s.masterNodes.map((n) =>
-            n.id === nodeId && n.type === "prompt"
-              ? { ...n, expanded: !n.expanded }
-              : n
-          ),
-        })),
+      setMasterNodes: (nodes) =>
+        set((s) => {
+          const normalized = normalizeNodes(nodes);
+          const oldStruct = s.masterNodes
+            .map((n) => `${n.type}:${n.id}`)
+            .join("|");
+          const newStruct = normalized
+            .map((n) => `${n.type}:${n.id}`)
+            .join("|");
+          if (oldStruct === newStruct) {
+            return { masterNodes: normalized };
+          }
+          return {
+            undoStack: [...s.undoStack, s.masterNodes].slice(-20),
+            masterNodes: normalized,
+          };
+        }),
 
       removeNode: (nodeId) =>
         set((s) => ({
@@ -486,7 +461,6 @@ export const useAppStore = create<AppState>()(
             promptId: b.promptId,
             header: b.title,
             content: b.content,
-            expanded: false,
           }));
           state = {
             ...state,

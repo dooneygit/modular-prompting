@@ -22,6 +22,16 @@ export function PromptCard({ prompt }: { prompt: Prompt }) {
       })
     );
     e.dataTransfer.effectAllowed = "copy";
+
+    const pill = document.createElement("div");
+    pill.textContent = prompt.title || "Untitled";
+    pill.className =
+      "fixed left-0 px-2 py-1 rounded-full text-xs font-medium bg-primary text-on-primary pointer-events-none whitespace-nowrap";
+    pill.style.top = "-1000px";
+    document.body.appendChild(pill);
+    e.dataTransfer.setDragImage(pill, 12, 12);
+    requestAnimationFrame(() => pill.remove());
+
     setIsDragging(true);
   };
 
