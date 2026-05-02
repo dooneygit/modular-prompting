@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useEffect } from "react";
 import { useAppStore } from "../../store/promptStore";
 import type { Folder } from "../../store/promptStore";
 
@@ -9,14 +9,6 @@ interface DeleteFolderModalProps {
 
 export function DeleteFolderModal({ folder, onClose }: DeleteFolderModalProps) {
   const { deleteFolder } = useAppStore();
-  const [inputValue, setInputValue] = useState("");
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  const isConfirmed = inputValue === folder.name;
-
-  useEffect(() => {
-    inputRef.current?.focus();
-  }, []);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -27,7 +19,6 @@ export function DeleteFolderModal({ folder, onClose }: DeleteFolderModalProps) {
   }, [onClose]);
 
   const handleConfirm = () => {
-    if (!isConfirmed) return;
     deleteFolder(folder.id);
     onClose();
   };
@@ -39,7 +30,7 @@ export function DeleteFolderModal({ folder, onClose }: DeleteFolderModalProps) {
       onClick={onClose}
     >
       <div
-        className="w-[420px] rounded-md p-6 flex flex-col gap-5"
+        className="w-[380px] rounded-md p-6 flex flex-col gap-5"
         style={{
           background: "rgba(37, 38, 38, 0.85)",
           backdropFilter: "blur(20px)",
@@ -53,37 +44,10 @@ export function DeleteFolderModal({ folder, onClose }: DeleteFolderModalProps) {
             Delete folder
           </span>
           <p className="text-on-surface-variant text-sm leading-relaxed">
-            This will permanently delete{" "}
+            Are you sure you want to delete{" "}
             <span className="text-on-surface font-medium">"{folder.name}"</span>{" "}
-            and all prompts inside it. This action cannot be undone.
+            and all prompts inside it? This action cannot be undone.
           </p>
-        </div>
-
-        <div className="flex flex-col gap-2">
-          <label className="text-on-surface-variant text-xs uppercase tracking-wider">
-            Type <span className="text-on-surface font-medium normal-case">{folder.name}</span> to confirm
-          </label>
-          <input
-            ref={inputRef}
-            type="text"
-            value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
-            onKeyDown={(e) => { if (e.key === "Enter") handleConfirm(); }}
-            placeholder={folder.name}
-            className="w-full text-sm text-on-surface placeholder-on-surface-variant/40 rounded-sm px-3 py-2 outline-none transition-all duration-200"
-            style={{
-              background: "#000000",
-              border: "1px solid transparent",
-            }}
-            onFocus={(e) => {
-              e.currentTarget.style.background = "#2c2c2c";
-              e.currentTarget.style.border = "1px solid #767575";
-            }}
-            onBlur={(e) => {
-              e.currentTarget.style.background = "#000000";
-              e.currentTarget.style.border = "1px solid transparent";
-            }}
-          />
         </div>
 
         <div className="flex justify-end gap-3">
@@ -98,13 +62,8 @@ export function DeleteFolderModal({ folder, onClose }: DeleteFolderModalProps) {
           </button>
           <button
             onClick={handleConfirm}
-            disabled={!isConfirmed}
             className="px-4 py-1.5 rounded-md text-sm font-medium transition-all duration-200"
-            style={{
-              background: isConfirmed ? "#ee7d77" : "rgba(238,125,119,0.2)",
-              color: isConfirmed ? "#1a0a09" : "rgba(238,125,119,0.4)",
-              cursor: isConfirmed ? "pointer" : "not-allowed",
-            }}
+            style={{ background: "#ee7d77", color: "#1a0a09" }}
           >
             Delete folder
           </button>
