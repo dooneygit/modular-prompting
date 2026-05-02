@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import { useAppStore } from "../../store/promptStore";
 import { Icon } from "./Icon";
 import { FolderTree } from "./FolderTree";
@@ -8,9 +9,63 @@ const NAV_ITEMS = [
   { id: "recent", label: "Recent", icon: "history" },
 ];
 
+const SCROLL_EDGE_PX = 48;
+const SCROLL_SPEED_PX = 8;
+
 export function SideNavBar() {
   const { tabs, activeTabId, selectView, addFolder } = useAppStore();
   const activeTab = tabs.find((t) => t.id === activeTabId);
+  const navRef = useRef<HTMLElement>(null);
+  const scrollDirRef = useRef(0);
+  const rafRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    const nav = navRef.current;
+    if (!nav) return;
+
+    const stop = () => {
+      scrollDirRef.current = 0;
+      if (rafRef.current !== null) {
+        cancelAnimationFrame(rafRef.current);
+        rafRef.current = null;
+      }
+    };
+
+    const tick = () => {
+      const dir = scrollDirRef.current;
+      if (dir === 0 || !navRef.current) {
+        rafRef.current = null;
+        return;
+      }
+      navRef.current.scrollTop += dir * SCROLL_SPEED_PX;
+      rafRef.current = requestAnimationFrame(tick);
+    };
+
+    const onDragOver = (e: DragEvent) => {
+      if (!e.dataTransfer?.types.includes("folder-id")) return;
+      const rect = nav.getBoundingClientRect();
+      if (e.clientY < rect.top + SCROLL_EDGE_PX) {
+        scrollDirRef.current = -1;
+      } else if (e.clientY > rect.bottom - SCROLL_EDGE_PX) {
+        scrollDirRef.current = 1;
+      } else {
+        scrollDirRef.current = 0;
+      }
+      if (scrollDirRef.current !== 0 && rafRef.current === null) {
+        rafRef.current = requestAnimationFrame(tick);
+      }
+    };
+
+    nav.addEventListener("dragover", onDragOver, true);
+    document.addEventListener("dragend", stop);
+    document.addEventListener("drop", stop);
+    return () => {
+      nav.removeEventListener("dragover", onDragOver, true);
+      document.removeEventListener("dragend", stop);
+      document.removeEventListener("drop", stop);
+      stop();
+    };
+  }, []);
 
   return (
     <aside className="flex flex-col h-full py-6 px-4 bg-surface-container-low text-sm tracking-tight w-56 border-r border-outline-variant/20 shrink-0">
@@ -27,7 +82,7 @@ export function SideNavBar() {
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 space-y-1 overflow-y-auto">
+      <nav ref={navRef} className="flex-1 space-y-1 overflow-y-auto">
         {NAV_ITEMS.map((item) => (
           <div
             key={item.id}
