@@ -12,7 +12,7 @@ const NAV_ITEMS = [
 const SCROLL_EDGE_PX = 48;
 const SCROLL_SPEED_PX = 8;
 
-export function SideNavBar() {
+export function SideNavBar({ width }: { width: number }) {
   const { tabs, activeTabId, selectView, addFolder } = useAppStore();
   const activeTab = tabs.find((t) => t.id === activeTabId);
   const navRef = useRef<HTMLElement>(null);
@@ -68,7 +68,7 @@ export function SideNavBar() {
   }, []);
 
   return (
-    <aside className="flex flex-col h-full py-6 px-4 bg-surface-container-low text-sm tracking-tight w-56 border-r border-outline-variant/20 shrink-0">
+    <aside className="flex flex-col h-full py-6 px-4 bg-surface-container-low text-sm tracking-tight border-r border-outline-variant/20 shrink-0" style={{ width }}>
       {/* Header */}
       <div className="flex items-center gap-3 mb-8">
         <div className="w-8 h-8 rounded-full bg-surface-container-highest flex items-center justify-center border border-outline-variant/20">
