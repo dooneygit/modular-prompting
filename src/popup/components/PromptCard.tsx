@@ -22,6 +22,20 @@ export function PromptCard({ prompt }: { prompt: Prompt }) {
       })
     );
     e.dataTransfer.effectAllowed = "copy";
+
+    const pill = document.createElement("div");
+    pill.textContent = prompt.title;
+    pill.style.cssText =
+      "position:fixed;top:-200px;left:-200px;" +
+      "background:#c6c6c7;color:#3f4041;" +
+      "padding:2px 10px;border-radius:9999px;" +
+      "font-size:11px;font-weight:600;font-family:Inter,system-ui,sans-serif;" +
+      "white-space:nowrap;max-width:160px;overflow:hidden;text-overflow:ellipsis;" +
+      "box-shadow:0 1px 3px rgba(0,0,0,.3);pointer-events:none;";
+    document.body.appendChild(pill);
+    e.dataTransfer.setDragImage(pill, pill.offsetWidth / 2, 12);
+    setTimeout(() => document.body.removeChild(pill), 0);
+
     setIsDragging(true);
   };
 
