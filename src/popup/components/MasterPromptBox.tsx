@@ -13,7 +13,7 @@ const PROMPT_DND_TYPE = "application/prompt-json";
 const REORDER_FLAG = "application/prompt-reorder";
 
 const FRAGMENT_SPAN_CLASS =
-  "rounded px-1 bg-primary/20 text-on-surface box-decoration-clone";
+  "rounded bg-primary/20 text-on-surface box-decoration-clone";
 const HANDLE_CLASS =
   "material-symbols-outlined select-none align-middle mr-0.5 cursor-grab text-on-surface-variant";
 
@@ -253,6 +253,121 @@ function moveCursorOutBackward(span: HTMLElement) {
   sel.addRange(range);
 }
 
+function setCaret(node: Node, offset: number) {
+  const sel = window.getSelection();
+  if (!sel) return;
+  const r = document.createRange();
+  r.setStart(node, offset);
+  r.collapse(true);
+  sel.removeAllRanges();
+  sel.addRange(r);
+}
+
+function firstTextChild(span: HTMLElement): Text | null {
+  for (const c of Array.from(span.childNodes)) {
+    if (c.nodeType === Node.TEXT_NODE) return c as Text;
+  }
+  return null;
+}
+
+function lastTextChild(span: HTMLElement): Text | null {
+  let last: Text | null = null;
+  for (const c of Array.from(span.childNodes)) {
+    if (c.nodeType === Node.TEXT_NODE) last = c as Text;
+  }
+  return last;
+}
+
+function flipAffinity(
+  e: React.KeyboardEvent,
+  dir: "left" | "right"
+): boolean {
+  if (e.shiftKey || e.ctrlKey || e.metaKey || e.altKey) return false;
+  const sel = window.getSelection();
+  if (!sel?.rangeCount || !sel.isCollapsed) return false;
+  const range = sel.getRangeAt(0);
+  const node = range.startContainer;
+  const offset = range.startOffset;
+  if (node.nodeType !== Node.TEXT_NODE) return false;
+  const parent = (node as Text).parentElement;
+  if (!parent) return false;
+  const text = node.textContent || "";
+
+  if (dir === "right") {
+    if (offset !== text.length) return false;
+    if (parent.dataset.type === "text") {
+      const next = parent.nextElementSibling as HTMLElement | null;
+      if (next?.dataset.type === "prompt") {
+        const t = firstTextChild(next);
+        if (t) {
+          e.preventDefault();
+          setCaret(t, 0);
+          return true;
+        }
+      }
+    } else if (parent.dataset.type === "prompt") {
+      const next = parent.nextElementSibling as HTMLElement | null;
+      if (next?.dataset.type === "text") {
+        const t = firstTextChild(next);
+        if (t) {
+          e.preventDefault();
+          setCaret(t, 0);
+          return true;
+        }
+      }
+    }
+  } else {
+    if (offset !== 0) return false;
+    if (parent.dataset.type === "text") {
+      const prev = parent.previousElementSibling as HTMLElement | null;
+      if (prev?.dataset.type === "prompt") {
+        const t = lastTextChild(prev);
+        if (t) {
+          e.preventDefault();
+          setCaret(t, t.textContent?.length || 0);
+          return true;
+        }
+      }
+    } else if (parent.dataset.type === "prompt") {
+      const prev = parent.previousElementSibling as HTMLElement | null;
+      if (prev?.dataset.type === "text") {
+        const t = lastTextChild(prev);
+        if (t) {
+          e.preventDefault();
+          setCaret(t, t.textContent?.length || 0);
+          return true;
+        }
+      }
+    }
+  }
+  return false;
+}
+
+function snapToOutwardAffinity() {
+  const sel = window.getSelection();
+  if (!sel?.rangeCount || !sel.isCollapsed) return;
+  const range = sel.getRangeAt(0);
+  const node = range.startContainer;
+  const offset = range.startOffset;
+  if (node.nodeType !== Node.TEXT_NODE) return;
+  const parent = (node as Text).parentElement;
+  if (!parent || parent.dataset.type !== "prompt") return;
+  const text = node.textContent || "";
+  if (offset === 0) {
+    const prev = parent.previousElementSibling as HTMLElement | null;
+    if (prev?.dataset.type === "text") {
+      const t = lastTextChild(prev);
+      if (t) setCaret(t, t.textContent?.length || 0);
+    }
+  } else if (offset === text.length) {
+    const next = parent.nextElementSibling as HTMLElement | null;
+    if (next?.dataset.type === "text") {
+      const t = firstTextChild(next);
+      if (t) setCaret(t, 0);
+    }
+  }
+}
+
 function moveCursorIntoForward(span: HTMLElement) {
   const sel = window.getSelection();
   if (!sel) return;
@@ -343,6 +458,12 @@ export function MasterPromptBox({ width }: { width: number }) {
   }, [setMasterNodes]);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if (e.key === "ArrowRight") {
+      if (flipAffinity(e, "right")) return;
+    }
+    if (e.key === "ArrowLeft") {
+      if (flipAffinity(e, "left")) return;
+    }
     if (e.key === "Enter") {
       e.preventDefault();
       document.execCommand("insertText", false, "\n");
@@ -395,6 +516,10 @@ export function MasterPromptBox({ width }: { width: number }) {
         }
       }
     }
+  }, []);
+
+  const handleMouseUp = useCallback(() => {
+    requestAnimationFrame(snapToOutwardAffinity);
   }, []);
 
   const handlePaste = useCallback((e: React.ClipboardEvent) => {
@@ -594,6 +719,7 @@ export function MasterPromptBox({ width }: { width: number }) {
             spellCheck={false}
             onInput={handleInput}
             onKeyDown={handleKeyDown}
+            onMouseUp={handleMouseUp}
             onPaste={handlePaste}
             className="outline-none text-xs font-mono text-on-surface leading-relaxed whitespace-pre-wrap break-words min-h-full"
           />
