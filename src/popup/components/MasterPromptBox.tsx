@@ -1,5 +1,6 @@
 import {
   useCallback,
+  useEffect,
   useLayoutEffect,
   useMemo,
   useRef,
@@ -438,7 +439,7 @@ export function MasterPromptBox({ width }: { width: number }) {
     await navigator.clipboard.writeText(text);
   };
 
-  const handleInput = useCallback(() => {
+  const syncDomToStore = useCallback(() => {
     const editor = editorRef.current;
     if (!editor) return;
     ensureHandles(editor);
@@ -456,6 +457,45 @@ export function MasterPromptBox({ width }: { width: number }) {
     }
     setMasterNodes(parsed);
   }, [setMasterNodes]);
+
+  const handleInput = useCallback(() => {
+    syncDomToStore();
+  }, [syncDomToStore]);
+
+  useEffect(() => {
+    const editor = editorRef.current;
+    if (!editor) return;
+    const handler = (event: Event) => {
+      const e = event as InputEvent;
+      if (e.inputType !== "insertText") return;
+      const data = e.data;
+      if (!data) return;
+      const sel = window.getSelection();
+      if (!sel?.rangeCount || !sel.isCollapsed) return;
+      const range = sel.getRangeAt(0);
+      const node = range.startContainer;
+      const offset = range.startOffset;
+      if (node.nodeType !== Node.TEXT_NODE) return;
+      const parent = (node as Text).parentElement;
+      if (parent?.dataset.type !== "text") return;
+      const text = node.textContent || "";
+      const atOutwardBoundary =
+        (offset === 0 &&
+          (parent.previousElementSibling as HTMLElement | null)?.dataset
+            .type === "prompt") ||
+        (offset === text.length &&
+          (parent.nextElementSibling as HTMLElement | null)?.dataset.type ===
+            "prompt");
+      if (!atOutwardBoundary) return;
+      e.preventDefault();
+      (node as Text).textContent =
+        text.slice(0, offset) + data + text.slice(offset);
+      setCaret(node, offset + data.length);
+      syncDomToStore();
+    };
+    editor.addEventListener("beforeinput", handler);
+    return () => editor.removeEventListener("beforeinput", handler);
+  }, [syncDomToStore]);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
     if (e.key === "ArrowRight") {
