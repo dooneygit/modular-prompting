@@ -241,7 +241,7 @@ type DropTarget =
   | { type: "text-split"; textNodeId: string }
   | null;
 
-export function MasterPromptBox() {
+export function MasterPromptBox({ width }: { width: number }) {
   const masterNodes = useAppStore((s) => s.masterNodes);
   const undoStack = useAppStore((s) => s.undoStack);
   const undoMaster = useAppStore((s) => s.undoMaster);
@@ -423,7 +423,7 @@ export function MasterPromptBox() {
   );
 
   return (
-    <aside className="w-72 border-l border-outline-variant/10 bg-surface-container-low flex flex-col shrink-0">
+    <aside className="border-l border-outline-variant/10 bg-surface-container-low flex flex-col shrink-0" style={{ width }}>
       <div className="flex items-center gap-2 border-b border-outline-variant/10 px-3 py-2">
         <h2 className="min-w-0 flex-1 truncate text-xs font-bold uppercase tracking-widest text-on-surface-variant">
           Master Prompt
