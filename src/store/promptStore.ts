@@ -44,6 +44,7 @@ const INITIAL_TAB_ID = "default-tab";
 interface AppState {
   folders: Folder[];
   prompts: Prompt[];
+  recentDrops: string[];
   masterNodes: MasterNode[];
   undoStack: MasterNode[][];
   tabs: Tab[];
@@ -60,6 +61,7 @@ interface AppState {
   updatePrompt: (id: string, title: string, content: string) => void;
   deletePrompt: (id: string) => void;
   togglePromptFavorite: (id: string) => void;
+  recordDrop: (promptId: string) => void;
 
   insertContentAtOffset: (charOffset: number, content: string) => void;
   updateTextNode: (nodeId: string, content: string) => void;
@@ -85,6 +87,7 @@ export const useAppStore = create<AppState>()(
     (set, get) => ({
       folders: [],
       prompts: [],
+      recentDrops: [],
       masterNodes: [],
       undoStack: [],
       tabs: [{ id: INITIAL_TAB_ID, viewId: "recent", searchQuery: "" }],
@@ -111,13 +114,19 @@ export const useAppStore = create<AppState>()(
         const { folders } = get();
         const descendantIds = getDescendantIds(folders, id);
         const allIds = [id, ...descendantIds];
-        set((s) => ({
-          folders: s.folders.filter((f) => !allIds.includes(f.id)),
-          prompts: s.prompts.filter((p) => !allIds.includes(p.folderId)),
-          tabs: s.tabs.map((t) =>
-            allIds.includes(t.viewId) ? { ...t, viewId: "recent" } : t
-          ),
-        }));
+        set((s) => {
+          const deletedPromptIds = new Set(
+            s.prompts.filter((p) => allIds.includes(p.folderId)).map((p) => p.id)
+          );
+          return {
+            folders: s.folders.filter((f) => !allIds.includes(f.id)),
+            prompts: s.prompts.filter((p) => !allIds.includes(p.folderId)),
+            recentDrops: s.recentDrops.filter((rid) => !deletedPromptIds.has(rid)),
+            tabs: s.tabs.map((t) =>
+              allIds.includes(t.viewId) ? { ...t, viewId: "recent" } : t
+            ),
+          };
+        });
       },
 
       moveFolder: (id, newParentId) => {
@@ -165,6 +174,15 @@ export const useAppStore = create<AppState>()(
       deletePrompt: (id) =>
         set((s) => ({
           prompts: s.prompts.filter((p) => p.id !== id),
+          recentDrops: s.recentDrops.filter((rid) => rid !== id),
+        })),
+
+      recordDrop: (promptId) =>
+        set((s) => ({
+          recentDrops: [
+            promptId,
+            ...s.recentDrops.filter((id) => id !== promptId),
+          ].slice(0, 20),
         })),
 
       togglePromptFavorite: (id) =>
@@ -257,7 +275,7 @@ export const useAppStore = create<AppState>()(
     }),
     {
       name: "prompt-vault-storage",
-      version: 4,
+      version: 5,
       migrate: (persistedState: unknown, version: number) => {
         let state = persistedState as Record<string, unknown>;
 
@@ -334,11 +352,16 @@ export const useAppStore = create<AppState>()(
           };
         }
 
+        if (version < 5) {
+          state = { ...state, recentDrops: [] };
+        }
+
         return state;
       },
       partialize: (state) => ({
         folders: state.folders,
         prompts: state.prompts,
+        recentDrops: state.recentDrops,
         masterNodes: state.masterNodes,
         tabs: state.tabs,
         activeTabId: state.activeTabId,

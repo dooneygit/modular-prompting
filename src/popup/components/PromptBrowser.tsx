@@ -8,6 +8,7 @@ export function PromptBrowser() {
     tabs,
     activeTabId,
     prompts,
+    recentDrops,
     folders,
     setSearchQuery,
     addPrompt,
@@ -24,7 +25,10 @@ export function PromptBrowser() {
     if (activeView === "all") {
       // show all
     } else if (activeView === "recent") {
-      list = [...prompts].sort((a, b) => b.updatedAt - a.updatedAt);
+      const promptMap = new Map(prompts.map((p) => [p.id, p]));
+      list = recentDrops
+        .map((id) => promptMap.get(id))
+        .filter((p): p is typeof prompts[number] => p !== undefined);
     } else if (activeView === "favorites") {
       list = prompts.filter((p) => p.favorited);
     } else {
@@ -41,7 +45,7 @@ export function PromptBrowser() {
     }
 
     return list;
-  }, [activeView, prompts, searchQuery]);
+  }, [activeView, prompts, recentDrops, searchQuery]);
 
   const activeFolder = folders.find((f) => f.id === activeView);
   const canAddPrompt = !!activeFolder;
@@ -92,7 +96,9 @@ export function PromptBrowser() {
               ? "No prompts match your search"
               : activeView === "favorites"
                 ? "No favorite prompts yet"
-                : "No prompts yet"}
+                : activeView === "recent"
+                  ? "No prompts dropped yet"
+                  : "No prompts yet"}
           </p>
         </div>
       )}

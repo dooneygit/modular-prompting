@@ -106,6 +106,7 @@ export function MasterPromptBox({ width }: { width: number }) {
   const undoMaster = useAppStore((s) => s.undoMaster);
   const clearMaster = useAppStore((s) => s.clearMaster);
   const insertContentAtOffset = useAppStore((s) => s.insertContentAtOffset);
+  const recordDrop = useAppStore((s) => s.recordDrop);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const [dropCaret, setDropCaret] = useState<DropCaret>(null);
@@ -154,7 +155,7 @@ export function MasterPromptBox({ width }: { width: number }) {
       const raw = e.dataTransfer.getData(PROMPT_DND_TYPE);
       if (!raw) return;
 
-      const data = JSON.parse(raw) as { content: string };
+      const data = JSON.parse(raw) as { id: string; content: string };
       const textarea = containerRef.current?.querySelector(
         "textarea[data-node-type='text']"
       ) as HTMLTextAreaElement | null;
@@ -163,8 +164,9 @@ export function MasterPromptBox({ width }: { width: number }) {
         : (masterNodes[0]?.content.length ?? 0);
 
       insertContentAtOffset(charOffset, data.content);
+      recordDrop(data.id);
     },
-    [masterNodes, insertContentAtOffset]
+    [masterNodes, insertContentAtOffset, recordDrop]
   );
 
   return (
