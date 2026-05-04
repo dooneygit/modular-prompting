@@ -87,7 +87,7 @@ export const useAppStore = create<AppState>()(
       prompts: [],
       masterNodes: [],
       undoStack: [],
-      tabs: [{ id: INITIAL_TAB_ID, viewId: "all", searchQuery: "" }],
+      tabs: [{ id: INITIAL_TAB_ID, viewId: "recent", searchQuery: "" }],
       activeTabId: INITIAL_TAB_ID,
       editingPromptId: null,
       renamingFolderId: null,
@@ -115,7 +115,7 @@ export const useAppStore = create<AppState>()(
           folders: s.folders.filter((f) => !allIds.includes(f.id)),
           prompts: s.prompts.filter((p) => !allIds.includes(p.folderId)),
           tabs: s.tabs.map((t) =>
-            allIds.includes(t.viewId) ? { ...t, viewId: "all" } : t
+            allIds.includes(t.viewId) ? { ...t, viewId: "recent" } : t
           ),
         }));
       },
@@ -226,7 +226,7 @@ export const useAppStore = create<AppState>()(
       openNewTab: () => {
         const id = crypto.randomUUID();
         set((s) => ({
-          tabs: [...s.tabs, { id, viewId: "all", searchQuery: "" }],
+          tabs: [...s.tabs, { id, viewId: "recent", searchQuery: "" }],
           activeTabId: id,
         }));
       },
@@ -276,7 +276,7 @@ export const useAppStore = create<AppState>()(
                 viewId:
                   typeof state.activeView === "string"
                     ? state.activeView
-                    : "all",
+                    : "recent",
                 searchQuery: "",
               },
             ],

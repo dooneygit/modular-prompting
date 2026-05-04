@@ -4,7 +4,6 @@ import { Icon } from "./Icon";
 import { FolderTree } from "./FolderTree";
 
 const NAV_ITEMS = [
-  { id: "all", label: "All Prompts", icon: "folder_open" },
   { id: "favorites", label: "Favorites", icon: "star" },
   { id: "recent", label: "Recent", icon: "history" },
 ];

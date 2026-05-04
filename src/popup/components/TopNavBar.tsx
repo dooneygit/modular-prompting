@@ -2,7 +2,6 @@ import { useAppStore } from "../../store/promptStore";
 import { Icon } from "./Icon";
 
 const VIEW_LABELS: Record<string, string> = {
-  all: "All Prompts",
   recent: "Recent",
   favorites: "Favorites",
 };
