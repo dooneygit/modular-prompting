@@ -5,7 +5,7 @@ import { FolderTree } from "./FolderTree";
 
 const NAV_ITEMS = [
   { id: "favorites", label: "Favorites", icon: "star" },
-  { id: "recent", label: "Recent", icon: "history" },
+  { id: "all", label: "All Prompts", icon: "apps" },
 ];
 
 const SCROLL_EDGE_PX = 48;
@@ -90,7 +90,7 @@ export function SideNavBar({ width }: { width: number }) {
               activeTab?.viewId === item.id
                 ? "bg-surface-container-high text-on-surface"
                 : "text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high"
-            } ${item.id === "recent" ? "mb-4" : ""}`}
+            } ${item.id === "all" ? "mb-4" : ""}`}
           >
             <Icon name={item.icon} className="text-[20px]" />
             <span>{item.label}</span>

@@ -21,12 +21,14 @@ export function PromptBrowser() {
   const filteredPrompts = useMemo(() => {
     let list = prompts;
 
-    if (activeView === "all") {
-      // show all
-    } else if (activeView === "recent") {
-      list = [...prompts].sort((a, b) => b.updatedAt - a.updatedAt);
-    } else if (activeView === "favorites") {
+    if (activeView === "favorites") {
       list = prompts.filter((p) => p.favorited);
+    } else if (activeView === "all" || activeView === "recent") {
+      list = [...prompts].sort((a, b) => {
+        const aTime = Math.max(a.lastUsedAt ?? 0, a.updatedAt);
+        const bTime = Math.max(b.lastUsedAt ?? 0, b.updatedAt);
+        return bTime - aTime;
+      });
     } else {
       list = prompts.filter((p) => p.folderId === activeView);
     }
@@ -92,7 +94,9 @@ export function PromptBrowser() {
               ? "No prompts match your search"
               : activeView === "favorites"
                 ? "No favorite prompts yet"
-                : "No prompts yet"}
+                : activeView === "all" || activeView === "recent"
+                  ? "No prompts yet"
+                  : "No prompts in this folder"}
           </p>
         </div>
       )}

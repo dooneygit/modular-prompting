@@ -14,6 +14,7 @@ export interface Prompt {
   folderId: string;
   createdAt: number;
   updatedAt: number;
+  lastUsedAt?: number;
   favorited: boolean;
 }
 
@@ -60,6 +61,7 @@ interface AppState {
   updatePrompt: (id: string, title: string, content: string) => void;
   deletePrompt: (id: string) => void;
   togglePromptFavorite: (id: string) => void;
+  touchPrompt: (id: string) => void;
 
   insertContentAtOffset: (charOffset: number, content: string) => void;
   updateTextNode: (nodeId: string, content: string) => void;
@@ -87,7 +89,7 @@ export const useAppStore = create<AppState>()(
       prompts: [],
       masterNodes: [],
       undoStack: [],
-      tabs: [{ id: INITIAL_TAB_ID, viewId: "recent", searchQuery: "" }],
+      tabs: [{ id: INITIAL_TAB_ID, viewId: "all", searchQuery: "" }],
       activeTabId: INITIAL_TAB_ID,
       editingPromptId: null,
       renamingFolderId: null,
@@ -115,7 +117,7 @@ export const useAppStore = create<AppState>()(
           folders: s.folders.filter((f) => !allIds.includes(f.id)),
           prompts: s.prompts.filter((p) => !allIds.includes(p.folderId)),
           tabs: s.tabs.map((t) =>
-            allIds.includes(t.viewId) ? { ...t, viewId: "recent" } : t
+            allIds.includes(t.viewId) ? { ...t, viewId: "all" } : t
           ),
         }));
       },
@@ -174,6 +176,13 @@ export const useAppStore = create<AppState>()(
           ),
         })),
 
+      touchPrompt: (id) =>
+        set((s) => ({
+          prompts: s.prompts.map((p) =>
+            p.id === id ? { ...p, lastUsedAt: Date.now() } : p
+          ),
+        })),
+
       insertContentAtOffset: (charOffset, content) =>
         set((s) => {
           const node = s.masterNodes[0];
@@ -226,7 +235,7 @@ export const useAppStore = create<AppState>()(
       openNewTab: () => {
         const id = crypto.randomUUID();
         set((s) => ({
-          tabs: [...s.tabs, { id, viewId: "recent", searchQuery: "" }],
+          tabs: [...s.tabs, { id, viewId: "all", searchQuery: "" }],
           activeTabId: id,
         }));
       },
@@ -257,7 +266,7 @@ export const useAppStore = create<AppState>()(
     }),
     {
       name: "prompt-vault-storage",
-      version: 4,
+      version: 5,
       migrate: (persistedState: unknown, version: number) => {
         let state = persistedState as Record<string, unknown>;
 
@@ -331,6 +340,16 @@ export const useAppStore = create<AppState>()(
                 content: parts.join("\n\n"),
               },
             ],
+          };
+        }
+
+        if (version < 5) {
+          const tabs = (state.tabs ?? []) as Tab[];
+          state = {
+            ...state,
+            tabs: tabs.map((t) =>
+              t.viewId === "recent" ? { ...t, viewId: "all" } : t
+            ),
           };
         }
 
