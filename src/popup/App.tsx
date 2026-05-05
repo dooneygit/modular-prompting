@@ -13,12 +13,15 @@ const MIN_PANEL = 120;
 
 export default function App() {
   const editingPromptId = useAppStore((s) => s.editingPromptId);
-  const [leftWidth, setLeftWidth] = useState(224);
-  const [rightWidth, setRightWidth] = useState(288);
   const fullscreen = isFullscreenView();
-  const [totalWidth, setTotalWidth] = useState(
-    fullscreen ? window.innerWidth : POPUP_WIDTH
+  const initialTotal = fullscreen ? window.innerWidth : POPUP_WIDTH;
+  const [leftWidth, setLeftWidth] = useState(
+    fullscreen ? Math.round(initialTotal / 6) : 224
   );
+  const [rightWidth, setRightWidth] = useState(
+    fullscreen ? Math.round(initialTotal / 3) : 288
+  );
+  const [totalWidth, setTotalWidth] = useState(initialTotal);
 
   useEffect(() => {
     if (!fullscreen) return;
