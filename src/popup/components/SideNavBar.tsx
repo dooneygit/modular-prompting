@@ -4,8 +4,8 @@ import { Icon } from "./Icon";
 import { FolderTree } from "./FolderTree";
 
 const NAV_ITEMS = [
-  { id: "favorites", label: "Favorites", icon: "star" },
   { id: "all", label: "All Prompts", icon: "apps" },
+  { id: "favorites", label: "Favorites", icon: "star" },
 ];
 
 const SCROLL_EDGE_PX = 48;
