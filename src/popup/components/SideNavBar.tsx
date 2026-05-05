@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import { useAppStore } from "../../store/promptStore";
 import { Icon } from "./Icon";
 import { FolderTree } from "./FolderTree";
+import { isFullscreenView, openFullscreenTab } from "../fullscreen";
 
 const NAV_ITEMS = [
   { id: "all", label: "All Prompts", icon: "apps" },
@@ -14,6 +15,7 @@ const SCROLL_SPEED_PX = 8;
 export function SideNavBar({ width }: { width: number }) {
   const { tabs, activeTabId, selectView, addFolder } = useAppStore();
   const activeTab = tabs.find((t) => t.id === activeTabId);
+  const fullscreen = isFullscreenView();
   const navRef = useRef<HTMLElement>(null);
   const scrollDirRef = useRef(0);
   const rafRef = useRef<number | null>(null);
@@ -70,9 +72,19 @@ export function SideNavBar({ width }: { width: number }) {
     <aside className="flex flex-col h-full py-6 px-4 bg-surface-container-low text-sm tracking-tight border-r border-outline-variant/20 shrink-0" style={{ width }}>
       {/* Header */}
       <div className="flex items-center gap-3 mb-8">
-        <div className="w-8 h-8 rounded-full bg-surface-container-highest flex items-center justify-center border border-outline-variant/20">
-          <Icon name="terminal" className="text-primary text-sm" />
-        </div>
+        {fullscreen ? (
+          <div className="w-8 h-8 rounded-full bg-surface-container-highest flex items-center justify-center border border-outline-variant/20">
+            <Icon name="terminal" className="text-primary text-sm" />
+          </div>
+        ) : (
+          <button
+            onClick={openFullscreenTab}
+            title="Open in new tab"
+            className="w-8 h-8 rounded-full bg-surface-container-highest flex items-center justify-center border border-outline-variant/20 hover:bg-surface-container-high transition-colors active:scale-[0.96]"
+          >
+            <Icon name="open_in_new" className="text-primary text-sm" />
+          </button>
+        )}
         <div className="min-w-0">
           <h1 className="truncate text-xs font-bold uppercase tracking-widest text-on-surface-variant">
             Quick prompting
