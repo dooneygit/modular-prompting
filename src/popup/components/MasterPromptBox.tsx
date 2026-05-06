@@ -91,7 +91,7 @@ function TextNodeView({ node, solo }: { node: MasterTextNode; solo?: boolean }) 
       data-node-id={node.id}
       data-node-type="text"
       rows={1}
-      className={`w-full outline-none text-xs font-mono text-on-surface leading-relaxed resize-none bg-transparent block overflow-hidden transition-colors duration-150 ${
+      className={`w-full outline-none text-xs font-sans font-semibold text-on-surface/85 leading-relaxed resize-none bg-transparent block overflow-hidden transition-colors duration-150 ${
         solo && !node.content ? "min-h-[4rem]" : ""
       }`}
     />
@@ -238,7 +238,7 @@ export function MasterPromptBox({ width }: { width: number }) {
 
           {isEmpty && !dropCaret && (
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-              <p className="text-xs font-mono text-on-surface/50 leading-normal italic">
+              <p className="text-xs font-sans font-semibold text-on-surface/85 leading-normal italic">
                 Type and drag prompts here...
               </p>
             </div>
