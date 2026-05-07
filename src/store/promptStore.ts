@@ -87,7 +87,7 @@ export const useAppStore = create<AppState>()(
     (set, get) => ({
       folders: [],
       prompts: [],
-      masterNodes: [],
+      masterNodes: normalizeNodes([]),
       undoStack: [],
       tabs: [{ id: INITIAL_TAB_ID, viewId: "all", searchQuery: "" }],
       activeTabId: INITIAL_TAB_ID,
@@ -185,8 +185,7 @@ export const useAppStore = create<AppState>()(
 
       insertContentAtOffset: (charOffset, content) =>
         set((s) => {
-          const node = s.masterNodes[0];
-          if (!node) return s;
+          const node = s.masterNodes[0] ?? normalizeNodes([])[0];
           const safe = Math.min(Math.max(charOffset, 0), node.content.length);
           const newContent =
             node.content.slice(0, safe) + content + node.content.slice(safe);
