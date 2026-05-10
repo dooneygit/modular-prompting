@@ -71,7 +71,7 @@ export function SideNavBar({ width }: { width: number }) {
   return (
     <aside className="flex flex-col h-full py-6 px-4 bg-surface-container-low text-sm tracking-tight border-r border-outline-variant/20 shrink-0" style={{ width }}>
       {/* Header */}
-      <div className="flex items-center gap-3 mb-8">
+      <div className="flex items-center gap-3 mb-4">
         {fullscreen ? (
           <div className="w-8 h-8 rounded-full bg-surface-container-highest flex items-center justify-center border border-outline-variant/20">
             <Icon name="terminal" className="text-primary text-sm" />
@@ -102,7 +102,7 @@ export function SideNavBar({ width }: { width: number }) {
               activeTab?.viewId === item.id
                 ? "bg-surface-container-high text-on-surface"
                 : "text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high"
-            } ${item.id === "all" ? "mb-4" : ""}`}
+            }`}
           >
             <Icon name={item.icon} className="text-[20px]" />
             <span>{item.label}</span>
