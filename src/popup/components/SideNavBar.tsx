@@ -13,7 +13,14 @@ const SCROLL_EDGE_PX = 48;
 const SCROLL_SPEED_PX = 8;
 
 export function SideNavBar({ width }: { width: number }) {
-  const { tabs, activeTabId, selectView, addFolder } = useAppStore();
+  const {
+    tabs,
+    activeTabId,
+    selectView,
+    addFolder,
+    inPagePanelEnabled,
+    toggleInPagePanel,
+  } = useAppStore();
   const activeTab = tabs.find((t) => t.id === activeTabId);
   const fullscreen = isFullscreenView();
   const navRef = useRef<HTMLElement>(null);
@@ -127,9 +134,16 @@ export function SideNavBar({ width }: { width: number }) {
           <Icon name="create_new_folder" className="text-[20px]" />
           <span>Add Folder</span>
         </div>
-        <div className="text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors duration-200 flex items-center gap-3 px-3 py-2 cursor-pointer rounded-md active:scale-[0.98]">
-          <Icon name="settings" className="text-[20px]" />
-          <span>Settings</span>
+        <div
+          onClick={toggleInPagePanel}
+          title="Show the prompt library on supported AI chat pages"
+          className="text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors duration-200 flex items-center gap-3 px-3 py-2 cursor-pointer rounded-md active:scale-[0.98]"
+        >
+          <Icon
+            name={inPagePanelEnabled ? "toggle_on" : "toggle_off"}
+            className={`text-[20px] ${inPagePanelEnabled ? "text-primary" : ""}`}
+          />
+          <span>In-page panel</span>
         </div>
       </div>
     </aside>
