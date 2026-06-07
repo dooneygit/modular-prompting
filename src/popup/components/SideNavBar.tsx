@@ -76,7 +76,7 @@ export function SideNavBar({ width, inPage }: { width: number; inPage?: boolean 
   }, []);
 
   return (
-    <aside className="flex flex-col h-full py-6 px-4 bg-surface-container-low text-sm tracking-tight border-r border-outline-variant/20 shrink-0" style={{ width }}>
+    <aside className={`flex flex-col h-full ${inPage ? "pt-2 pb-6" : "py-6"} px-4 bg-surface-container-low text-sm tracking-tight border-r border-outline-variant/20 shrink-0`} style={{ width }}>
       {/* Header */}
       {!inPage && (
         <div className="flex items-center gap-3 mb-4">

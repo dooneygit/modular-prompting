@@ -33,6 +33,15 @@ export function mountPanel(adapter: PlatformAdapter): void {
   host.id = HOST_ID;
   host.style.cssText =
     "position:fixed;top:0;left:0;width:0;height:0;z-index:2147483647;";
+
+  // Key events fired inside the shadow root bubble out through this host element
+  // before reaching the document. Stopping them here prevents Claude.ai's global
+  // keydown handler from stealing focus back to the ProseMirror editor.
+  const blockKeys = (e: Event) => e.stopPropagation();
+  host.addEventListener("keydown", blockKeys);
+  host.addEventListener("keyup", blockKeys);
+  host.addEventListener("keypress", blockKeys);
+
   document.body.appendChild(host);
 
   // Shadow DOM isolates the panel's styles from the host page (and vice versa),
