@@ -19,7 +19,7 @@ export function InPagePanel(_props: { adapter: PlatformAdapter }) {
         type="button"
         onClick={() => setOpen(true)}
         title="Open Quick Prompting"
-        className="fixed right-0 top-1/2 -translate-y-1/2 flex items-center justify-center w-8 h-12 rounded-l-md bg-surface-container-high text-on-surface-variant hover:text-on-surface border border-r-0 border-outline-variant/20 shadow-2xl"
+        className="fixed right-0 top-1/2 -translate-y-1/2 flex items-center justify-center w-8 h-12 rounded-l-md bg-surface-container-high text-on-surface-variant hover:text-on-surface border border-r-0 border-outline-variant/20"
       >
         <Icon name="chevron_left" className="text-[20px]" />
       </button>
@@ -27,7 +27,7 @@ export function InPagePanel(_props: { adapter: PlatformAdapter }) {
   }
 
   return (
-    <div className="fixed right-0 top-0 h-screen w-[480px] flex flex-col bg-surface text-on-surface border-l border-outline-variant/20 shadow-2xl font-sans">
+    <div className="fixed right-0 top-0 h-screen w-[480px] flex flex-col bg-surface text-on-surface border-l border-outline-variant/20 font-sans">
       <header className="flex items-center justify-between h-12 px-4 border-b border-outline-variant/10 shrink-0">
         <h1 className="text-xs font-bold uppercase tracking-widest text-on-surface-variant">
           Quick Prompting
