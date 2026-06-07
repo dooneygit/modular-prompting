@@ -173,7 +173,7 @@ export function MasterPromptBox({ width }: { width: number }) {
     <aside className="border-l border-outline-variant/10 bg-surface-container-low flex flex-col shrink-0" style={{ width }}>
       <div className="flex items-center gap-2 border-b border-outline-variant/10 px-3 py-2">
         <h2 className="min-w-0 flex-1 truncate text-xs font-bold uppercase tracking-widest text-on-surface-variant">
-          Master Prompt
+          Editor
         </h2>
         <div
           className="flex shrink-0 items-center gap-1"

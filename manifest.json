@@ -1,12 +1,12 @@
 {
   "manifest_version": 3,
-  "name": "Prompt Vault",
+  "name": "Quick Prompting",
   "version": "0.1.0",
   "description": "Save, organize, and reuse your prompts",
   "permissions": ["storage", "clipboardWrite"],
   "action": {
     "default_popup": "popup.html",
-    "default_title": "Prompt Vault"
+    "default_title": "Quick Prompting"
   },
   "background": {
     "service_worker": "src/background/index.ts",

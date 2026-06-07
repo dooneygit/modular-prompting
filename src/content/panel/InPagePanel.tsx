@@ -18,7 +18,7 @@ export function InPagePanel(_props: { adapter: PlatformAdapter }) {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        title="Open Prompt Vault"
+        title="Open Quick Prompting"
         className="fixed right-0 top-1/2 -translate-y-1/2 flex items-center justify-center w-8 h-12 rounded-l-md bg-surface-container-high text-on-surface-variant hover:text-on-surface border border-r-0 border-outline-variant/20 shadow-2xl"
       >
         <Icon name="chevron_left" className="text-[20px]" />
@@ -27,10 +27,10 @@ export function InPagePanel(_props: { adapter: PlatformAdapter }) {
   }
 
   return (
-    <div className="fixed right-0 top-0 h-screen w-[380px] flex flex-col bg-surface text-on-surface border-l border-outline-variant/20 shadow-2xl font-sans">
+    <div className="fixed right-0 top-0 h-screen w-[480px] flex flex-col bg-surface text-on-surface border-l border-outline-variant/20 shadow-2xl font-sans">
       <header className="flex items-center justify-between h-12 px-4 border-b border-outline-variant/10 shrink-0">
         <h1 className="text-xs font-bold uppercase tracking-widest text-on-surface-variant">
-          Prompt Vault
+          Quick Prompting
         </h1>
         <button
           type="button"
@@ -43,7 +43,7 @@ export function InPagePanel(_props: { adapter: PlatformAdapter }) {
       </header>
 
       <div className="flex flex-1 min-h-0">
-        <SideNavBar width={132} />
+        <SideNavBar width={200} />
         <main className="flex-1 flex flex-col min-w-0 bg-surface">
           <PromptBrowser />
         </main>
