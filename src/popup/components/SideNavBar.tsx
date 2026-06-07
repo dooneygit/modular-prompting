@@ -5,7 +5,7 @@ import { FolderTree } from "./FolderTree";
 import { isFullscreenView, openFullscreenTab } from "../fullscreen";
 
 const NAV_ITEMS = [
-  { id: "all", label: "All Prompts", icon: "apps" },
+  { id: "all", label: "All", icon: "apps" },
   { id: "favorites", label: "Favorites", icon: "star" },
 ];
 
