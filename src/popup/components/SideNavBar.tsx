@@ -12,7 +12,7 @@ const NAV_ITEMS = [
 const SCROLL_EDGE_PX = 48;
 const SCROLL_SPEED_PX = 8;
 
-export function SideNavBar({ width }: { width: number }) {
+export function SideNavBar({ width, inPage }: { width: number; inPage?: boolean }) {
   const {
     tabs,
     activeTabId,
@@ -78,26 +78,28 @@ export function SideNavBar({ width }: { width: number }) {
   return (
     <aside className="flex flex-col h-full py-6 px-4 bg-surface-container-low text-sm tracking-tight border-r border-outline-variant/20 shrink-0" style={{ width }}>
       {/* Header */}
-      <div className="flex items-center gap-3 mb-4">
-        {fullscreen ? (
-          <div className="w-8 h-8 rounded-full bg-surface-container-highest flex items-center justify-center border border-outline-variant/20">
-            <Icon name="terminal" className="text-primary text-sm" />
+      {!inPage && (
+        <div className="flex items-center gap-3 mb-4">
+          {fullscreen ? (
+            <div className="w-8 h-8 rounded-full bg-surface-container-highest flex items-center justify-center border border-outline-variant/20">
+              <Icon name="terminal" className="text-primary text-sm" />
+            </div>
+          ) : (
+            <button
+              onClick={openFullscreenTab}
+              title="Open in new tab"
+              className="w-8 h-8 rounded-full bg-surface-container-highest flex items-center justify-center border border-outline-variant/20 hover:bg-surface-container-high transition-colors active:scale-[0.96]"
+            >
+              <Icon name="open_in_new" className="text-primary text-sm" />
+            </button>
+          )}
+          <div className="min-w-0">
+            <h1 className="truncate text-xs font-bold uppercase tracking-widest text-on-surface-variant">
+              Quick prompting
+            </h1>
           </div>
-        ) : (
-          <button
-            onClick={openFullscreenTab}
-            title="Open in new tab"
-            className="w-8 h-8 rounded-full bg-surface-container-highest flex items-center justify-center border border-outline-variant/20 hover:bg-surface-container-high transition-colors active:scale-[0.96]"
-          >
-            <Icon name="open_in_new" className="text-primary text-sm" />
-          </button>
-        )}
-        <div className="min-w-0">
-          <h1 className="truncate text-xs font-bold uppercase tracking-widest text-on-surface-variant">
-            Quick prompting
-          </h1>
         </div>
-      </div>
+      )}
 
       {/* Navigation */}
       <nav ref={navRef} className="flex-1 space-y-1 overflow-y-auto">
