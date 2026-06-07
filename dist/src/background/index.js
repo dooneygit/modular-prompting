@@ -1,1 +1,1 @@
-(function(){"use strict";chrome.runtime.onInstalled.addListener(()=>{console.log("[Prompt Vault] Extension installed.")}),chrome.runtime.onMessage.addListener((e,t,n)=>(e.type==="ping"&&n({type:"pong"}),!0))})();
+(function(){"use strict";chrome.runtime.onInstalled.addListener(()=>{console.log("[Quick Prompting] Extension installed.")}),chrome.runtime.onMessage.addListener((e,t,n)=>(e.type==="ping"&&n({type:"pong"}),!0))})();

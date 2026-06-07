@@ -111,10 +111,10 @@ function FolderItem({ folder, depth }: { folder: Folder; depth: number }) {
             onClick={(e) => e.stopPropagation()}
           />
         ) : (
-          <span className="flex-1 truncate text-sm">{folder.name}</span>
+          <span className="flex-1 text-sm whitespace-nowrap group-hover:overflow-hidden group-hover:text-ellipsis">{folder.name}</span>
         )}
         {!isRenaming && (
-          <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+          <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0 w-0 overflow-hidden group-hover:w-auto">
             <button
               onClick={(e) => {
                 e.stopPropagation();

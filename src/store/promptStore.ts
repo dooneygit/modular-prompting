@@ -1,5 +1,6 @@
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
+import { persist, createJSONStorage } from "zustand/middleware";
+import { chromeStorage, STORAGE_KEY } from "./chromeStorage";
 
 export interface Folder {
   id: string;
@@ -51,6 +52,7 @@ interface AppState {
   activeTabId: string;
   editingPromptId: string | null;
   renamingFolderId: string | null;
+  inPagePanelEnabled: boolean;
 
   addFolder: (name: string, parentId?: string | null) => string;
   renameFolder: (id: string, name: string) => void;
@@ -75,6 +77,7 @@ interface AppState {
   setSearchQuery: (query: string) => void;
   setEditingPromptId: (id: string | null) => void;
   setRenamingFolderId: (id: string | null) => void;
+  toggleInPagePanel: () => void;
 }
 
 function getDescendantIds(folders: Folder[], parentId: string): string[] {
@@ -93,6 +96,7 @@ export const useAppStore = create<AppState>()(
       activeTabId: INITIAL_TAB_ID,
       editingPromptId: null,
       renamingFolderId: null,
+      inPagePanelEnabled: true,
 
       addFolder: (name, parentId = null) => {
         const id = crypto.randomUUID();
@@ -262,10 +266,14 @@ export const useAppStore = create<AppState>()(
 
       setEditingPromptId: (id) => set({ editingPromptId: id }),
       setRenamingFolderId: (id) => set({ renamingFolderId: id }),
+
+      toggleInPagePanel: () =>
+        set((s) => ({ inPagePanelEnabled: !s.inPagePanelEnabled })),
     }),
     {
-      name: "prompt-vault-storage",
+      name: STORAGE_KEY,
       version: 5,
+      storage: createJSONStorage(() => chromeStorage),
       migrate: (persistedState: unknown, version: number) => {
         let state = persistedState as Record<string, unknown>;
 
@@ -360,6 +368,7 @@ export const useAppStore = create<AppState>()(
         masterNodes: state.masterNodes,
         tabs: state.tabs,
         activeTabId: state.activeTabId,
+        inPagePanelEnabled: state.inPagePanelEnabled,
       }),
     }
   )

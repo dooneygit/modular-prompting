@@ -1,5 +1,5 @@
 chrome.runtime.onInstalled.addListener(() => {
-  console.log("[Prompt Vault] Extension installed.");
+  console.log("[Quick Prompting] Extension installed.");
 });
 
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
