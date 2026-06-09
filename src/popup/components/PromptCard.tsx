@@ -2,14 +2,15 @@ import { useState } from "react";
 import { useAppStore } from "../../store/promptStore";
 import type { Prompt } from "../../store/promptStore";
 import { Icon } from "./Icon";
+import { DeletePromptModal } from "./DeletePromptModal";
 
 const PROMPT_DND_TYPE = "application/prompt-json";
 
 export function PromptCard({ prompt }: { prompt: Prompt }) {
-  const { setEditingPromptId, deletePrompt, togglePromptFavorite } =
-    useAppStore();
+  const { setEditingPromptId, togglePromptFavorite } = useAppStore();
 
   const [isDragging, setIsDragging] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
   const favorited = prompt.favorited;
 
   const handleDragStart = (e: React.DragEvent) => {
@@ -48,6 +49,7 @@ export function PromptCard({ prompt }: { prompt: Prompt }) {
   };
 
   return (
+    <>
     <div
       draggable
       onDragStart={handleDragStart}
@@ -102,7 +104,7 @@ export function PromptCard({ prompt }: { prompt: Prompt }) {
             aria-label="Delete prompt"
             onClick={(e) => {
               e.stopPropagation();
-              deletePrompt(prompt.id);
+              setShowDeleteModal(true);
             }}
             className="p-1 text-on-surface-variant hover:text-error transition-colors"
           >
@@ -111,5 +113,9 @@ export function PromptCard({ prompt }: { prompt: Prompt }) {
         </div>
       </div>
     </div>
+    {showDeleteModal && (
+      <DeletePromptModal prompt={prompt} onClose={() => setShowDeleteModal(false)} />
+    )}
+    </>
   );
 }
