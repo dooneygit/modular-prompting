@@ -5,7 +5,7 @@ import {
   useState,
 } from "react";
 import { useAppStore } from "../../store/promptStore";
-import type { MasterTextNode } from "../../store/promptStore";
+import type { EditorTextNode } from "../../store/promptStore";
 import { Icon } from "./Icon";
 
 const PROMPT_DND_TYPE = "application/prompt-json";
@@ -56,7 +56,7 @@ function getCharOffsetAtPoint(
   return Math.min(offset, text.length);
 }
 
-function TextNodeView({ node, solo }: { node: MasterTextNode; solo?: boolean }) {
+function TextNodeView({ node, solo }: { node: EditorTextNode; solo?: boolean }) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const updateTextNode = useAppStore((s) => s.updateTextNode);
 
@@ -100,22 +100,22 @@ function TextNodeView({ node, solo }: { node: MasterTextNode; solo?: boolean }) 
 
 type DropCaret = { containerX: number; containerY: number } | null;
 
-export function MasterPromptBox({ width }: { width: number }) {
-  const masterNodes = useAppStore((s) => s.masterNodes);
+export function EditorBox({ width }: { width: number }) {
+  const editorNodes = useAppStore((s) => s.editorNodes);
   const undoStack = useAppStore((s) => s.undoStack);
-  const undoMaster = useAppStore((s) => s.undoMaster);
-  const clearMaster = useAppStore((s) => s.clearMaster);
+  const undoEditor = useAppStore((s) => s.undoEditor);
+  const clearEditor = useAppStore((s) => s.clearEditor);
   const insertContentAtOffset = useAppStore((s) => s.insertContentAtOffset);
   const touchPrompt = useAppStore((s) => s.touchPrompt);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const [dropCaret, setDropCaret] = useState<DropCaret>(null);
 
-  const hasContent = masterNodes.some((n) => n.content.length > 0);
-  const isEmpty = masterNodes.every((n) => !n.content);
+  const hasContent = editorNodes.some((n) => n.content.length > 0);
+  const isEmpty = editorNodes.every((n) => !n.content);
 
   const handleCopy = async () => {
-    const text = masterNodes[0]?.content ?? "";
+    const text = editorNodes[0]?.content ?? "";
     await navigator.clipboard.writeText(text);
   };
 
@@ -161,12 +161,12 @@ export function MasterPromptBox({ width }: { width: number }) {
       ) as HTMLTextAreaElement | null;
       const charOffset = textarea
         ? getCharOffsetAtPoint(textarea, e.clientX, e.clientY)
-        : (masterNodes[0]?.content.length ?? 0);
+        : (editorNodes[0]?.content.length ?? 0);
 
       insertContentAtOffset(charOffset, data.content);
       touchPrompt(data.id);
     },
-    [masterNodes, insertContentAtOffset, touchPrompt]
+    [editorNodes, insertContentAtOffset, touchPrompt]
   );
 
   return (
@@ -178,11 +178,11 @@ export function MasterPromptBox({ width }: { width: number }) {
         <div
           className="flex shrink-0 items-center gap-1"
           role="toolbar"
-          aria-label="Master prompt actions"
+          aria-label="Editor actions"
         >
           <button
             type="button"
-            onClick={undoMaster}
+            onClick={undoEditor}
             disabled={undoStack.length === 0}
             className="rounded border border-outline-variant/20 p-1 text-on-surface-variant transition-colors duration-200 ease-in-out hover:border-outline-variant/30 hover:text-on-surface disabled:opacity-30"
             title="Undo"
@@ -200,10 +200,10 @@ export function MasterPromptBox({ width }: { width: number }) {
           </button>
           <button
             type="button"
-            onClick={clearMaster}
+            onClick={clearEditor}
             disabled={!hasContent}
             className="rounded border border-outline-variant/20 p-1 text-on-surface-variant transition-colors duration-200 ease-in-out hover:border-outline-variant/30 hover:text-error disabled:opacity-30"
-            title="Clear prompt"
+            title="Clear"
           >
             <Icon name="delete" className="text-[16px]" />
           </button>
@@ -221,7 +221,7 @@ export function MasterPromptBox({ width }: { width: number }) {
             isEmpty ? "cursor-text" : ""
           }`}
         >
-          {masterNodes.map((node) => (
+          {editorNodes.map((node) => (
             <TextNodeView key={node.id} node={node} solo={true} />
           ))}
 

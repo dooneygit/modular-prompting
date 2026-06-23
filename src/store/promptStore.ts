@@ -19,13 +19,13 @@ export interface Prompt {
   favorited: boolean;
 }
 
-export interface MasterTextNode {
+export interface EditorTextNode {
   type: "text";
   id: string;
   content: string;
 }
 
-export type MasterNode = MasterTextNode;
+export type EditorNode = EditorTextNode;
 
 export interface Tab {
   id: string;
@@ -33,7 +33,7 @@ export interface Tab {
   searchQuery: string;
 }
 
-function normalizeNodes(nodes: MasterNode[]): MasterNode[] {
+function normalizeNodes(nodes: EditorNode[]): EditorNode[] {
   if (nodes.length === 0) {
     return [{ type: "text", id: crypto.randomUUID(), content: "" }];
   }
@@ -46,8 +46,8 @@ const INITIAL_TAB_ID = "default-tab";
 interface AppState {
   folders: Folder[];
   prompts: Prompt[];
-  masterNodes: MasterNode[];
-  undoStack: MasterNode[][];
+  editorNodes: EditorNode[];
+  undoStack: EditorNode[][];
   tabs: Tab[];
   activeTabId: string;
   editingPromptId: string | null;
@@ -67,8 +67,8 @@ interface AppState {
 
   insertContentAtOffset: (charOffset: number, content: string) => void;
   updateTextNode: (nodeId: string, content: string) => void;
-  undoMaster: () => void;
-  clearMaster: () => void;
+  undoEditor: () => void;
+  clearEditor: () => void;
 
   selectView: (viewId: string) => void;
   openNewTab: () => void;
@@ -90,7 +90,7 @@ export const useAppStore = create<AppState>()(
     (set, get) => ({
       folders: [],
       prompts: [],
-      masterNodes: normalizeNodes([]),
+      editorNodes: normalizeNodes([]),
       undoStack: [],
       tabs: [{ id: INITIAL_TAB_ID, viewId: "all", searchQuery: "" }],
       activeTabId: INITIAL_TAB_ID,
@@ -189,40 +189,40 @@ export const useAppStore = create<AppState>()(
 
       insertContentAtOffset: (charOffset, content) =>
         set((s) => {
-          const node = s.masterNodes[0] ?? normalizeNodes([])[0];
+          const node = s.editorNodes[0] ?? normalizeNodes([])[0];
           const safe = Math.min(Math.max(charOffset, 0), node.content.length);
           const newContent =
             node.content.slice(0, safe) + content + node.content.slice(safe);
           return {
-            undoStack: [...s.undoStack, s.masterNodes].slice(-20),
-            masterNodes: [{ ...node, content: newContent }],
+            undoStack: [...s.undoStack, s.editorNodes].slice(-20),
+            editorNodes: [{ ...node, content: newContent }],
           };
         }),
 
       updateTextNode: (nodeId, content) =>
         set((s) => ({
-          masterNodes: s.masterNodes.map((n) =>
+          editorNodes: s.editorNodes.map((n) =>
             n.id === nodeId ? { ...n, content } : n
           ),
         })),
 
-      undoMaster: () =>
+      undoEditor: () =>
         set((s) => {
           if (s.undoStack.length === 0) return s;
           const prev = s.undoStack[s.undoStack.length - 1];
           return {
-            masterNodes: normalizeNodes(prev),
+            editorNodes: normalizeNodes(prev),
             undoStack: s.undoStack.slice(0, -1),
           };
         }),
 
-      clearMaster: () =>
+      clearEditor: () =>
         set((s) => {
-          const hasContent = s.masterNodes.some((n) => n.content.length > 0);
+          const hasContent = s.editorNodes.some((n) => n.content.length > 0);
           if (!hasContent) return s;
           return {
-            undoStack: [...s.undoStack, s.masterNodes].slice(-20),
-            masterNodes: normalizeNodes([]),
+            undoStack: [...s.undoStack, s.editorNodes].slice(-20),
+            editorNodes: normalizeNodes([]),
           };
         }),
 
@@ -272,7 +272,7 @@ export const useAppStore = create<AppState>()(
     }),
     {
       name: STORAGE_KEY,
-      version: 5,
+      version: 6,
       storage: createJSONStorage(() => chromeStorage),
       migrate: (persistedState: unknown, version: number) => {
         let state = persistedState as Record<string, unknown>;
@@ -360,12 +360,20 @@ export const useAppStore = create<AppState>()(
           };
         }
 
+        if (version < 6) {
+          state = {
+            ...state,
+            editorNodes: state.masterNodes,
+            masterNodes: undefined,
+          };
+        }
+
         return state;
       },
       partialize: (state) => ({
         folders: state.folders,
         prompts: state.prompts,
-        masterNodes: state.masterNodes,
+        editorNodes: state.editorNodes,
         tabs: state.tabs,
         activeTabId: state.activeTabId,
         inPagePanelEnabled: state.inPagePanelEnabled,

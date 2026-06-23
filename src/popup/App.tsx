@@ -3,7 +3,7 @@ import { useAppStore } from "../store/promptStore";
 import { SideNavBar } from "./components/SideNavBar";
 import { TopNavBar } from "./components/TopNavBar";
 import { PromptBrowser } from "./components/PromptBrowser";
-import { MasterPromptBox } from "./components/MasterPromptBox";
+import { EditorBox } from "./components/EditorBox";
 import { EditModal } from "./components/EditModal";
 import { PanelSplitter } from "./components/PanelSplitter";
 import { isFullscreenView } from "./fullscreen";
@@ -64,7 +64,7 @@ export default function App() {
       {editorOpen && (
         <>
           <PanelSplitter onResize={resizeRight} />
-          <MasterPromptBox width={rightWidth} />
+          <EditorBox width={rightWidth} />
         </>
       )}
       {editingPromptId && <EditModal key={editingPromptId} />}
