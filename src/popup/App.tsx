@@ -22,6 +22,7 @@ export default function App() {
     fullscreen ? Math.round(initialTotal / 3) : 288
   );
   const [totalWidth, setTotalWidth] = useState(initialTotal);
+  const [editorOpen, setEditorOpen] = useState(false);
 
   useEffect(() => {
     if (!fullscreen) return;
@@ -57,11 +58,15 @@ export default function App() {
       <SideNavBar width={leftWidth} />
       <PanelSplitter onResize={resizeLeft} />
       <main className="flex-1 flex flex-col bg-surface min-w-0">
-        <TopNavBar />
+        <TopNavBar editorOpen={editorOpen} onToggleEditor={() => setEditorOpen((o) => !o)} />
         <PromptBrowser />
       </main>
-      <PanelSplitter onResize={resizeRight} />
-      <MasterPromptBox width={rightWidth} />
+      {editorOpen && (
+        <>
+          <PanelSplitter onResize={resizeRight} />
+          <MasterPromptBox width={rightWidth} />
+        </>
+      )}
       {editingPromptId && <EditModal key={editingPromptId} />}
     </div>
   );

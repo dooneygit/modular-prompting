@@ -7,7 +7,12 @@ const VIEW_LABELS: Record<string, string> = {
   favorites: "Favorites",
 };
 
-export function TopNavBar() {
+interface TopNavBarProps {
+  editorOpen: boolean;
+  onToggleEditor: () => void;
+}
+
+export function TopNavBar({ editorOpen, onToggleEditor }: TopNavBarProps) {
   const { tabs, activeTabId, folders, setActiveTabId, closeTab, openNewTab } =
     useAppStore();
 
@@ -53,6 +58,13 @@ export function TopNavBar() {
           title="New tab"
         >
           <Icon name="add" className="text-[20px]" />
+        </button>
+        <button
+          onClick={onToggleEditor}
+          className={`transition-colors ${editorOpen ? "text-primary" : "text-on-surface-variant hover:text-on-surface"}`}
+          title={editorOpen ? "Close editor" : "Open editor"}
+        >
+          <Icon name="edit" className="text-[20px]" />
         </button>
         <Icon
           name="help_outline"
