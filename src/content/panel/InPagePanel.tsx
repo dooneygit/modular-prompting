@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { SideNavBar } from "../../popup/components/SideNavBar";
 import { PromptBrowser } from "../../popup/components/PromptBrowser";
 import { EditModal } from "../../popup/components/EditModal";
@@ -6,6 +6,7 @@ import { Icon } from "../../popup/components/Icon";
 import { PanelSplitter } from "../../popup/components/PanelSplitter";
 import { useAppStore } from "../../store/promptStore";
 import { openFullscreenTab } from "../../popup/fullscreen";
+import { layoutShift } from "../layout";
 import type { PlatformAdapter } from "../platforms/types";
 
 const MIN_PANEL = 320;
@@ -26,6 +27,14 @@ export function InPagePanel(_props: { adapter: PlatformAdapter }) {
   const [sideWidth, setSideWidth] = useState(160);
   const editingPromptId = useAppStore((s) => s.editingPromptId);
   const panelResizeStartX = useRef<number | null>(null);
+
+  // Push the host page's chat content left while the panel is open (tracking
+  // resize), and restore it when collapsed or on unmount (extension disabled).
+  useEffect(() => {
+    if (open) layoutShift.apply(panelWidth);
+    else layoutShift.restore();
+    return () => layoutShift.restore();
+  }, [open, panelWidth]);
 
   function handlePanelEdgeMouseDown(e: React.MouseEvent) {
     e.preventDefault();
