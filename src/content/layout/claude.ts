@@ -1,12 +1,17 @@
 import { LayoutShiftAdapter } from "./base";
 
-const PANEL_HOST_ID = "prompt-vault-root";
+const APP_ROOT_ID = "root";
 
-// Claude.ai is a React SPA whose flex layout (collapsible sidebar + central chat
-// column) uses hashed class names, so we anchor on the semantic <main> element
-// and climb to the viewport-spanning app root. Shrinking that root reflows the
-// chat column left while leaving the sidebar untouched — no internal widths are
-// hardcoded.
+// Claude.ai is a React SPA. Its whole app (collapsible sidebar + chat column)
+// renders inside a single mount node, `div#root`, and the chat column is centered
+// within it — so shrinking #root's width reflows the column left. We must target
+// #root *deterministically*: Claude also keeps a separate full-viewport-width
+// overlay/portal div as a sibling under <body>, so any "widest body child"
+// heuristic flips onto that overlay on re-render and the real shift is lost.
+//
+// There is no <main> tag — the chat region is a plain div with role="main" — so
+// we anchor on that semantic role and climb to the body-level app root, falling
+// back to #root by id.
 export class ClaudeLayoutAdapter extends LayoutShiftAdapter {
   readonly id = "claude";
 
@@ -19,28 +24,16 @@ export class ClaudeLayoutAdapter extends LayoutShiftAdapter {
   }
 
   protected resolveTarget(): HTMLElement | null {
-    const main = document.querySelector("main");
+    const main = document.querySelector<HTMLElement>('[role="main"]');
     if (main) {
-      // Walk up to the outermost layout container directly under <body> so the
-      // whole app shrinks and its flex children reflow.
+      // Climb to the element directly under <body> — the app root that holds
+      // both the sidebar and the chat column.
       let el: HTMLElement = main;
       while (el.parentElement && el.parentElement !== document.body) {
         el = el.parentElement;
       }
       return el;
     }
-    return this.positionalFallback();
-  }
-
-  // If <main> hasn't rendered yet, fall back to the widest direct child of
-  // <body> that isn't our own panel host.
-  private positionalFallback(): HTMLElement | null {
-    let best: HTMLElement | null = null;
-    for (const child of Array.from(document.body.children)) {
-      if (!(child instanceof HTMLElement)) continue;
-      if (child.id === PANEL_HOST_ID) continue;
-      if (!best || child.offsetWidth > best.offsetWidth) best = child;
-    }
-    return best;
+    return document.getElementById(APP_ROOT_ID);
   }
 }

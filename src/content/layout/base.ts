@@ -20,24 +20,23 @@ export abstract class LayoutShiftAdapter {
    */
   protected abstract resolveTarget(): HTMLElement | null;
 
+  private width = 0;
   private active = false;
   private observer: MutationObserver | null = null;
+  private pending = false;
 
   /** Shift the host layout left by `panelWidth` px. Idempotent. */
   apply(panelWidth: number): void {
+    this.width = panelWidth;
     this.active = true;
-    document.documentElement.style.setProperty(
-      PANEL_WIDTH_VAR,
-      `${panelWidth}px`
-    );
-    this.ensureStyle();
-    this.mark();
+    this.reapply();
     this.observe();
   }
 
   /** Restore the host layout, undoing every DOM/style change this adapter made. */
   restore(): void {
     this.active = false;
+    this.pending = false;
     this.observer?.disconnect();
     this.observer = null;
     document.documentElement.style.removeProperty(PANEL_WIDTH_VAR);
@@ -45,6 +44,20 @@ export abstract class LayoutShiftAdapter {
     document
       .querySelectorAll(`[${MARKER_ATTR}]`)
       .forEach((el) => el.removeAttribute(MARKER_ATTR));
+  }
+
+  // Re-assert every piece of state a re-render may have discarded: the width
+  // variable (on <html>, which React doesn't own), the <head> <style> tag, and
+  // the marker on the freshly re-queried target. Each step is a no-op when
+  // already in place, so this is cheap to run on every mutation tick.
+  private reapply(): void {
+    if (!this.active) return;
+    document.documentElement.style.setProperty(
+      PANEL_WIDTH_VAR,
+      `${this.width}px`
+    );
+    this.ensureStyle();
+    this.mark();
   }
 
   /**
@@ -87,12 +100,24 @@ export abstract class LayoutShiftAdapter {
     }
   }
 
-  // Re-tag the target whenever the SPA mutates the tree (navigation, sidebar
-  // collapse, etc.) so the shift persists through re-renders.
+  // React re-renders (editing a message, a streaming reply, switching models)
+  // can override the container's layout, drop our <style> tag, or unmount and
+  // remount the wrapper entirely — orphaning the marker. Observing the whole
+  // body subtree (never a specific node, which would detach silently when
+  // replaced) lets us re-query and re-assert after any of these.
   private observe(): void {
     if (this.observer) return;
     this.observer = new MutationObserver(() => {
-      if (this.active) this.mark();
+      if (!this.active || this.pending) return;
+      // A single React commit emits a burst of mutations. Coalesce them into one
+      // reapply scheduled on a microtask: it runs after the commit settles but
+      // before the browser paints, so the shift is restored without a recentering
+      // flicker. We never cache the target — reapply() re-queries it each time.
+      this.pending = true;
+      queueMicrotask(() => {
+        this.pending = false;
+        this.reapply();
+      });
     });
     this.observer.observe(document.body, { childList: true, subtree: true });
   }
