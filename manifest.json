@@ -14,7 +14,11 @@
   },
   "content_scripts": [
     {
-      "matches": ["https://claude.ai/*"],
+      "matches": [
+        "https://claude.ai/*",
+        "https://chatgpt.com/*",
+        "https://chat.openai.com/*"
+      ],
       "js": ["src/content/index.ts"]
     }
   ]
