@@ -1,8 +1,13 @@
 import type { PlatformAdapter } from "./types";
 import { claudeAdapter } from "./claude";
 import { chatgptAdapter } from "./chatgpt";
+import { perplexityAdapter } from "./perplexity";
 
-const adapters: PlatformAdapter[] = [claudeAdapter, chatgptAdapter];
+const adapters: PlatformAdapter[] = [
+  claudeAdapter,
+  chatgptAdapter,
+  perplexityAdapter,
+];
 
 export function getAdapterForCurrentSite(): PlatformAdapter | null {
   const url = window.location.href;
