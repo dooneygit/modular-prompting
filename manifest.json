@@ -17,7 +17,9 @@
       "matches": [
         "https://claude.ai/*",
         "https://chatgpt.com/*",
-        "https://chat.openai.com/*"
+        "https://chat.openai.com/*",
+        "https://www.perplexity.ai/*",
+        "https://perplexity.ai/*"
       ],
       "js": ["src/content/index.ts"]
     }
