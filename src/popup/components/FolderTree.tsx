@@ -1,10 +1,41 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, createContext, useContext } from "react";
 import { useAppStore } from "../../store/promptStore";
 import type { Folder } from "../../store/promptStore";
 import { Icon } from "./Icon";
 import { DeleteFolderModal } from "./DeleteFolderModal";
 
-function FolderItem({ folder, depth }: { folder: Folder; depth: number }) {
+// Hovering within this many pixels of a root row's top or bottom edge targets
+// the gap between rows ("move to root here") instead of the row itself.
+const EDGE_BAND_PX = 6;
+
+// Where a drop would land at the root: `index` is a slot in the root folder
+// list; `area` marks the empty space below the tree (append to the end).
+type RootDrop = { index: number; area: boolean } | null;
+
+const RootDropContext = createContext<{
+  rootDrop: RootDrop;
+  setRootDrop: (d: RootDrop) => void;
+}>({ rootDrop: null, setRootDrop: () => {} });
+
+function InsertionLine({ edge }: { edge: "top" | "bottom" }) {
+  return (
+    <div
+      className={`absolute left-0 right-0 h-0.5 bg-primary rounded-full pointer-events-none z-10 ${
+        edge === "top" ? "top-0 -translate-y-1/2" : "bottom-0 translate-y-1/2"
+      }`}
+    />
+  );
+}
+
+function FolderItem({
+  folder,
+  depth,
+  rootIndex,
+}: {
+  folder: Folder;
+  depth: number;
+  rootIndex?: number;
+}) {
   const {
     folders,
     tabs,
@@ -15,6 +46,7 @@ function FolderItem({ folder, depth }: { folder: Folder; depth: number }) {
     setRenamingFolderId,
     moveFolder,
   } = useAppStore();
+  const { setRootDrop } = useContext(RootDropContext);
 
   const [isExpanded, setIsExpanded] = useState(true);
   const [isDragOver, setIsDragOver] = useState(false);
@@ -37,11 +69,22 @@ function FolderItem({ folder, depth }: { folder: Folder; depth: number }) {
     e.dataTransfer.effectAllowed = "move";
   };
 
+  // Only root rows expose gap zones; inside a subtree the whole row nests.
+  const rootSlotFor = (e: React.DragEvent): number | null => {
+    if (rootIndex === undefined) return null;
+    const rect = e.currentTarget.getBoundingClientRect();
+    if (e.clientY - rect.top < EDGE_BAND_PX) return rootIndex;
+    if (rect.bottom - e.clientY < EDGE_BAND_PX) return rootIndex + 1;
+    return null;
+  };
+
   const handleDragOver = (e: React.DragEvent) => {
     if (!e.dataTransfer.types.includes("folder-id")) return;
     e.preventDefault();
     e.stopPropagation();
-    setIsDragOver(true);
+    const slot = rootSlotFor(e);
+    setIsDragOver(slot === null);
+    setRootDrop(slot === null ? null : { index: slot, area: false });
   };
 
   const handleDragLeave = () => setIsDragOver(false);
@@ -50,8 +93,13 @@ function FolderItem({ folder, depth }: { folder: Folder; depth: number }) {
     e.preventDefault();
     e.stopPropagation();
     setIsDragOver(false);
+    setRootDrop(null);
     const draggedId = e.dataTransfer.getData("folder-id");
-    if (draggedId && draggedId !== folder.id) {
+    if (!draggedId) return;
+    const slot = rootSlotFor(e);
+    if (slot !== null) {
+      moveFolder(draggedId, null, slot);
+    } else if (draggedId !== folder.id) {
       moveFolder(draggedId, folder.id);
     }
   };
@@ -157,30 +205,61 @@ function FolderItem({ folder, depth }: { folder: Folder; depth: number }) {
 
 export function FolderTree() {
   const { folders, moveFolder } = useAppStore();
+  const [rootDrop, setRootDrop] = useState<RootDrop>(null);
   const rootFolders = folders.filter((f) => f.parentId === null);
+
+  // Rows stop propagation of their own drag events, so these only fire over the
+  // empty space below the tree and the thin margins between rows. Only the
+  // former is the "append to root" area; in a margin the adjacent row's edge
+  // band has already set the insertion line, so leave it alone.
+  const isBelowLastRow = (e: React.DragEvent) => {
+    const last = e.currentTarget.lastElementChild;
+    return !last || e.clientY > last.getBoundingClientRect().bottom;
+  };
 
   const handleRootDragOver = (e: React.DragEvent) => {
     if (!e.dataTransfer.types.includes("folder-id")) return;
     e.preventDefault();
+    if (isBelowLastRow(e)) setRootDrop({ index: rootFolders.length, area: true });
+  };
+
+  const handleRootDragLeave = (e: React.DragEvent) => {
+    if (e.currentTarget.contains(e.relatedTarget as Node | null)) return;
+    setRootDrop(null);
   };
 
   const handleRootDrop = (e: React.DragEvent) => {
     e.preventDefault();
+    setRootDrop(null);
     const draggedId = e.dataTransfer.getData("folder-id");
     if (draggedId) {
-      moveFolder(draggedId, null);
+      moveFolder(draggedId, null, rootDrop?.index ?? rootFolders.length);
     }
   };
 
   return (
-    <div
-      className="space-y-0.5"
-      onDragOver={handleRootDragOver}
-      onDrop={handleRootDrop}
-    >
-      {rootFolders.map((folder) => (
-        <FolderItem key={folder.id} folder={folder} depth={0} />
-      ))}
-    </div>
+    <RootDropContext.Provider value={{ rootDrop, setRootDrop }}>
+      <div
+        className={`space-y-0.5 min-h-16 rounded-md transition-colors ${
+          rootDrop?.area ? "ring-1 ring-primary/50 bg-surface-container-high/40" : ""
+        }`}
+        onDragOver={handleRootDragOver}
+        onDragLeave={handleRootDragLeave}
+        onDrop={handleRootDrop}
+        onDragEnd={() => setRootDrop(null)}
+      >
+        {rootFolders.map((folder, i) => (
+          <div key={folder.id} className="relative">
+            {!rootDrop?.area && rootDrop?.index === i && (
+              <InsertionLine edge="top" />
+            )}
+            <FolderItem folder={folder} depth={0} rootIndex={i} />
+            {!rootDrop?.area &&
+              rootDrop?.index === rootFolders.length &&
+              i === rootFolders.length - 1 && <InsertionLine edge="bottom" />}
+          </div>
+        ))}
+      </div>
+    </RootDropContext.Provider>
   );
 }

@@ -57,7 +57,11 @@ interface AppState {
   addFolder: (name: string, parentId?: string | null) => string;
   renameFolder: (id: string, name: string) => void;
   deleteFolder: (id: string) => void;
-  moveFolder: (id: string, newParentId: string | null) => void;
+  moveFolder: (
+    id: string,
+    newParentId: string | null,
+    rootIndex?: number
+  ) => void;
 
   addPrompt: (title: string, content: string, folderId: string) => string;
   updatePrompt: (id: string, title: string, content: string) => void;
@@ -126,17 +130,39 @@ export const useAppStore = create<AppState>()(
         }));
       },
 
-      moveFolder: (id, newParentId) => {
+      moveFolder: (id, newParentId, rootIndex) => {
         const { folders } = get();
         if (newParentId) {
           const descendantIds = getDescendantIds(folders, id);
           if (descendantIds.includes(newParentId) || id === newParentId) return;
         }
-        set((s) => ({
-          folders: s.folders.map((f) =>
+        set((s) => {
+          const moved = s.folders.map((f) =>
             f.id === id ? { ...f, parentId: newParentId } : f
-          ),
-        }));
+          );
+          if (newParentId !== null || rootIndex === undefined) {
+            return { folders: moved };
+          }
+          // Sibling order is array order, so reposition the folder among the
+          // root entries. rootIndex is a slot in the pre-move root list.
+          const rootIds = s.folders
+            .filter((f) => f.parentId === null)
+            .map((f) => f.id);
+          const from = rootIds.indexOf(id);
+          let to = rootIndex;
+          if (from !== -1) {
+            rootIds.splice(from, 1);
+            if (from < rootIndex) to -= 1;
+          }
+          rootIds.splice(to, 0, id);
+          const byId = new Map(moved.map((f) => [f.id, f]));
+          return {
+            folders: [
+              ...rootIds.map((rid) => byId.get(rid)!),
+              ...moved.filter((f) => f.parentId !== null),
+            ],
+          };
+        });
       },
 
       addPrompt: (title, content, folderId) => {
