@@ -102,7 +102,7 @@ export function SideNavBar({ width, inPage }: { width: number; inPage?: boolean 
       )}
 
       {/* Navigation */}
-      <nav ref={navRef} className="flex-1 space-y-1 overflow-y-auto">
+      <nav ref={navRef} className="flex-1 flex flex-col space-y-1 overflow-y-auto">
         {NAV_ITEMS.map((item) => (
           <div
             key={item.id}
@@ -119,7 +119,7 @@ export function SideNavBar({ width, inPage }: { width: number; inPage?: boolean 
         ))}
 
         {/* Folders Section */}
-        <div className="pt-4 pb-12 border-t border-outline-variant/10 space-y-0.5">
+        <div className="pt-4 border-t border-outline-variant/10 space-y-0.5 flex-1 flex flex-col">
           <p className="px-3 text-[10px] font-bold text-on-surface-variant/60 uppercase mb-2">
             Folders
           </p>
