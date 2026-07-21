@@ -240,8 +240,8 @@ export function FolderTree() {
   return (
     <RootDropContext.Provider value={{ rootDrop, setRootDrop }}>
       <div
-        className={`space-y-0.5 min-h-16 rounded-md transition-colors ${
-          rootDrop?.area ? "ring-1 ring-primary/50 bg-surface-container-high/40" : ""
+        className={`space-y-0.5 flex-1 min-h-16 pb-12 rounded-md transition-colors ${
+          rootDrop?.area ? "bg-surface-container-high/40" : ""
         }`}
         onDragOver={handleRootDragOver}
         onDragLeave={handleRootDragLeave}
@@ -254,8 +254,7 @@ export function FolderTree() {
               <InsertionLine edge="top" />
             )}
             <FolderItem folder={folder} depth={0} rootIndex={i} />
-            {!rootDrop?.area &&
-              rootDrop?.index === rootFolders.length &&
+            {rootDrop?.index === rootFolders.length &&
               i === rootFolders.length - 1 && <InsertionLine edge="bottom" />}
           </div>
         ))}

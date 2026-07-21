@@ -28,7 +28,7 @@ export function TopNavBar({ editorOpen, onToggleEditor }: TopNavBarProps) {
           return (
             <div
               key={tab.id}
-              className={`flex items-center gap-1.5 pb-4 mt-4 text-[13px] font-medium cursor-pointer transition-colors whitespace-nowrap ${
+              className={`flex items-center gap-1.5 pb-2 mt-4 mb-2 text-[13px] font-medium cursor-pointer transition-colors whitespace-nowrap ${
                 isActive
                   ? "text-primary border-b-2 border-primary"
                   : "text-on-surface-variant hover:text-on-surface"
