@@ -18,8 +18,6 @@ export function SideNavBar({ width, inPage }: { width: number; inPage?: boolean 
     activeTabId,
     selectView,
     addFolder,
-    inPagePanelEnabled,
-    toggleInPagePanel,
   } = useAppStore();
   const activeTab = tabs.find((t) => t.id === activeTabId);
   const fullscreen = isFullscreenView();
@@ -135,17 +133,6 @@ export function SideNavBar({ width, inPage }: { width: number; inPage?: boolean 
         >
           <Icon name="create_new_folder" className="text-[20px]" />
           <span>Add Folder</span>
-        </div>
-        <div
-          onClick={toggleInPagePanel}
-          title="Show the prompt library on supported AI chat pages"
-          className="text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors duration-200 flex items-center gap-3 px-3 py-2 cursor-pointer rounded-md active:scale-[0.98]"
-        >
-          <Icon
-            name={inPagePanelEnabled ? "toggle_on" : "toggle_off"}
-            className={`text-[20px] ${inPagePanelEnabled ? "text-primary" : ""}`}
-          />
-          <span>In-page panel</span>
         </div>
       </div>
     </aside>
