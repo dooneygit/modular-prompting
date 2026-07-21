@@ -53,6 +53,9 @@ interface AppState {
   editingPromptId: string | null;
   renamingFolderId: string | null;
   inPagePanelEnabled: boolean;
+  leftPanelWidth: number | null;
+  rightPanelWidth: number | null;
+  editorOpen: boolean;
 
   addFolder: (name: string, parentId?: string | null) => string;
   renameFolder: (id: string, name: string) => void;
@@ -82,6 +85,9 @@ interface AppState {
   setEditingPromptId: (id: string | null) => void;
   setRenamingFolderId: (id: string | null) => void;
   toggleInPagePanel: () => void;
+  setLeftPanelWidth: (width: number) => void;
+  setRightPanelWidth: (width: number) => void;
+  toggleEditorOpen: () => void;
 }
 
 function getDescendantIds(folders: Folder[], parentId: string): string[] {
@@ -101,6 +107,9 @@ export const useAppStore = create<AppState>()(
       editingPromptId: null,
       renamingFolderId: null,
       inPagePanelEnabled: true,
+      leftPanelWidth: null,
+      rightPanelWidth: null,
+      editorOpen: false,
 
       addFolder: (name, parentId = null) => {
         const id = crypto.randomUUID();
@@ -295,6 +304,10 @@ export const useAppStore = create<AppState>()(
 
       toggleInPagePanel: () =>
         set((s) => ({ inPagePanelEnabled: !s.inPagePanelEnabled })),
+
+      setLeftPanelWidth: (width) => set({ leftPanelWidth: width }),
+      setRightPanelWidth: (width) => set({ rightPanelWidth: width }),
+      toggleEditorOpen: () => set((s) => ({ editorOpen: !s.editorOpen })),
     }),
     {
       name: STORAGE_KEY,
@@ -403,6 +416,9 @@ export const useAppStore = create<AppState>()(
         tabs: state.tabs,
         activeTabId: state.activeTabId,
         inPagePanelEnabled: state.inPagePanelEnabled,
+        leftPanelWidth: state.leftPanelWidth,
+        rightPanelWidth: state.rightPanelWidth,
+        editorOpen: state.editorOpen,
       }),
     }
   )

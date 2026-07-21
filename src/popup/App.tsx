@@ -13,16 +13,37 @@ const MIN_PANEL = 120;
 
 export default function App() {
   const editingPromptId = useAppStore((s) => s.editingPromptId);
+  const storedLeft = useAppStore((s) => s.leftPanelWidth);
+  const storedRight = useAppStore((s) => s.rightPanelWidth);
+  const setLeftPanelWidth = useAppStore((s) => s.setLeftPanelWidth);
+  const setRightPanelWidth = useAppStore((s) => s.setRightPanelWidth);
+  const editorOpen = useAppStore((s) => s.editorOpen);
+  const toggleEditorOpen = useAppStore((s) => s.toggleEditorOpen);
   const fullscreen = isFullscreenView();
   const initialTotal = fullscreen ? window.innerWidth : POPUP_WIDTH;
-  const [leftWidth, setLeftWidth] = useState(
-    fullscreen ? Math.round(initialTotal / 6) : 224
-  );
-  const [rightWidth, setRightWidth] = useState(
-    fullscreen ? Math.round(initialTotal / 3) : 288
-  );
   const [totalWidth, setTotalWidth] = useState(initialTotal);
-  const [editorOpen, setEditorOpen] = useState(false);
+
+  const defaultLeft = fullscreen ? Math.round(totalWidth / 6) : 224;
+  const defaultRight = fullscreen ? Math.round(totalWidth / 3) : 288;
+
+  // Stored widths can come from a wider window (or from fullscreen while we
+  // are now in the popup), so keep the middle panel from collapsing.
+  function widthsFor(left: number | null, right: number | null) {
+    const l = Math.min(
+      left ?? defaultLeft,
+      Math.max(MIN_PANEL, totalWidth - 2 * MIN_PANEL)
+    );
+    const r = Math.min(
+      right ?? defaultRight,
+      Math.max(MIN_PANEL, totalWidth - l - MIN_PANEL)
+    );
+    return { left: l, right: r };
+  }
+
+  const { left: leftWidth, right: rightWidth } = widthsFor(
+    storedLeft,
+    storedRight
+  );
 
   useEffect(() => {
     if (!fullscreen) return;
@@ -31,22 +52,27 @@ export default function App() {
     return () => window.removeEventListener("resize", onResize);
   }, [fullscreen]);
 
+  // A drag registers its mousemove listener once, so these callbacks keep the
+  // widths they were rendered with. Read the live store instead of the closure.
+  function currentWidths() {
+    const s = useAppStore.getState();
+    return widthsFor(s.leftPanelWidth, s.rightPanelWidth);
+  }
+
   function resizeLeft(delta: number) {
-    setLeftWidth((w) => {
-      const next = w + delta;
-      const middleWidth = totalWidth - next - rightWidth;
-      if (next < MIN_PANEL || middleWidth < MIN_PANEL) return w;
-      return next;
-    });
+    const { left, right } = currentWidths();
+    const next = left + delta;
+    const middleWidth = totalWidth - next - right;
+    if (next < MIN_PANEL || middleWidth < MIN_PANEL) return;
+    setLeftPanelWidth(next);
   }
 
   function resizeRight(delta: number) {
-    setRightWidth((w) => {
-      const next = w - delta;
-      const middleWidth = totalWidth - leftWidth - next;
-      if (next < MIN_PANEL || middleWidth < MIN_PANEL) return w;
-      return next;
-    });
+    const { left, right } = currentWidths();
+    const next = right - delta;
+    const middleWidth = totalWidth - left - next;
+    if (next < MIN_PANEL || middleWidth < MIN_PANEL) return;
+    setRightPanelWidth(next);
   }
 
   const containerClass = fullscreen
@@ -58,7 +84,7 @@ export default function App() {
       <SideNavBar width={leftWidth} />
       <PanelSplitter onResize={resizeLeft} />
       <main className="flex-1 flex flex-col bg-surface min-w-0">
-        <TopNavBar editorOpen={editorOpen} onToggleEditor={() => setEditorOpen((o) => !o)} />
+        <TopNavBar editorOpen={editorOpen} onToggleEditor={toggleEditorOpen} />
         <PromptBrowser />
       </main>
       {editorOpen && (
