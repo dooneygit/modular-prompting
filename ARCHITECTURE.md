@@ -142,7 +142,12 @@ Acceptable for a personal library; see open questions.
 
 ## 4. Migration (first sign-in)
 
-1. After sign-in, `getDoc(users/{uid})`.
+0. **Merge prompt.** If the local library is non-empty after sign-in, it was made while signed out
+   (sign-out wipes it, §6). Before registering the push handler or alarm, the popup asks "Merge N
+   local prompts into <email>?". **Yes** → continue below. **No** → clear the local library
+   (`folders`, `prompts`) first, so the steps below upload nothing and the pull fills it from the
+   account.
+1. `getDoc(users/{uid})`.
 2. **Doc missing** → first sign-in anywhere: batch-write all local folders and prompts (chunked
    at 500), then write `users/{uid}` with `migratedAt`. Populate shadow. Writing the marker last
    makes an interrupted migration simply re-run (writes are idempotent by id).
@@ -185,7 +190,15 @@ The Firebase web `apiKey` in the bundle is an identifier, not a secret — rules
   behaves exactly as today. Local storage is always the source of truth for the UI.
 - **Offline / Firestore errors:** writes stay in the outbox; retried on next alarm, next background
   startup, or next local write. `navigator.onLine` is only a hint, not a gate.
-- **Sign-out:** keep local data (it's the user's library), clear shadow, outbox, and `lastPulledAt`.
+- **Sign-out:** the library is already in Firestore, so local data is wiped:
+  1. Flush the outbox, and wait until shadow matches local.
+  2. If the flush fails (offline, write errors), warn "N unsynced changes will be lost" and require
+     confirmation before continuing.
+  3. Clear account-scoped storage: `prompt-vault-storage` library data (`folders`, `prompts`) and
+     `prompt-vault-sync-meta` / `prompt-vault-outbox` (shadow, `lastPulledAt`, `lastSyncedUid`).
+     Keep local-only UI state (editor, tabs, panel widths, toggles).
+  4. `signOut()`. The signed-out user starts with an empty library; the next sign-in's pull (§4.3)
+     restores that account's data, and §4.2 uploads nothing for a brand-new account.
 - **SW termination:** all sync state (outbox, shadow, `lastPulledAt`) is in `chrome.storage.local`,
   so an evicted worker resumes cleanly.
 - UI shows a small status: local-only / synced / pending (N) / error.
@@ -196,9 +209,11 @@ The Firebase web `apiKey` in the bundle is an identifier, not a secret — rules
    "Web application" client still requires a client secret at token exchange, which can't ship in an
    extension. Implicit is the pragmatic option; the hosted-page fallback is the escape hatch if Google
    tightens this.
-2. **Account switching.** If user A signs out and user B signs in on the same browser, step 4.3
-   would upload A's local library into B's account. Options: prompt "merge local prompts into this
-   account?", or wipe local data on sign-out. Needs a product decision.
+2. **Account switching (resolved: wipe on sign-out §6, and a merge prompt on sign-in §4.0).**
+   Without these, if user A signs out and user B signs in on the same browser, step 4.3 would upload
+   A's local library into B's account. With the wipe, the only local data at sign-in is what was
+   made while signed out, and the user chooses whether to merge it into the account or discard it.
+   Tradeoff: after a sign-out, the user starts from an empty library.
 3. **Pull cadence.** Alarm polling (15 min) + on-open means cross-device changes aren't instant.
    Pulling when the popup opens is cheap and covers most real use — confirm that's enough.
 4. **Clock skew.** Could use `serverTimestamp()` for ordering, but then local LWW comparisons need
