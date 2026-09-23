@@ -63,6 +63,8 @@ import Firebase; they send `auth:signIn` / `auth:signOut` / `auth:status` messag
 | Open a tab to a hosted sign-in page, pass token back via content script | ✅ | ✅ | ✅ | Fallback if launchWebAuthFlow proves flaky |
 
 ### MV3 CSP / SDK constraints
+- **Version:** `firebase@12.19.0` (v10+ is the floor for the `firebase/auth/web-extension` entry).
+  Background bundle: 156 kB raw / 34 kB gzipped — acceptable for a background-only import.
 - **Remote code:** the default `firebase/auth` entry lazy-loads `apis.google.com/js/api.js`
   and reCAPTCHA for popup/phone flows. MV3 forbids remotely hosted code and the extension CSP
   (`script-src 'self'`) blocks it. Import **`firebase/auth/web-extension`**, which strips those
@@ -71,6 +73,11 @@ import Firebase; they send `auth:signIn` / `auth:signOut` / `auth:status` messag
   optional IndexedDB persistence, which is unreliable in a service worker. Use
   **`firebase/firestore/lite`** — fetch-based REST, no listeners, no offline cache. That matches
   "no real-time listeners" and we already have our own local cache.
+- **Verified:** `src/background/firebase.ts` initializes app + auth + Firestore Lite, and
+  `tests/background-firebase.test.ts` loads the built background bundle with `window`/`document`
+  absent (only `chrome` and `indexedDB` stubbed) and asserts the bundle pulls in no remote script.
+  Residual `window.cordova` / `document.cookie` references remain in the bundle but sit in code
+  paths the web-extension entry never reaches.
 - **No CSP changes needed:** MV3 default CSP doesn't restrict `connect-src`, and the Google
   endpoints are CORS-enabled, so no `host_permissions` are required (avoids Firefox's opt-in
   host permission prompt).
@@ -126,7 +133,10 @@ writing to local storage exactly as today.
 
 ### Pull
 "No listeners" still requires *some* pull or a second device never sees changes. Pull runs on:
-sign-in, background startup, and a `chrome.alarms` tick (e.g. every 15 min).
+sign-in, background startup, popup open, and a `chrome.alarms` tick (e.g. every 15 min).
+Popup-open is the trigger that matters in practice — it's one cheap query and covers the case
+the user actually notices (open the extension on device B after editing on device A); the alarm
+is just a backstop for long-open sessions.
 1. Flush outbox first.
 2. Query `where("updatedAt", ">", lastPulledAt)` on both collections.
 3. Per doc: skip if an outbox entry exists for it; else apply if `remote.updatedAt > local.updatedAt`
@@ -214,17 +224,12 @@ The Firebase web `apiKey` in the bundle is an identifier, not a secret — rules
    A's local library into B's account. With the wipe, the only local data at sign-in is what was
    made while signed out, and the user chooses whether to merge it into the account or discard it.
    Tradeoff: after a sign-out, the user starts from an empty library.
-3. **Pull cadence.** Alarm polling (15 min) + on-open means cross-device changes aren't instant.
-   Pulling when the popup opens is cheap and covers most real use — confirm that's enough.
-4. **Clock skew.** Could use `serverTimestamp()` for ordering, but then local LWW comparisons need
+3. **Clock skew.** Could use `serverTimestamp()` for ordering, but then local LWW comparisons need
    the server value echoed back. Recommend deferring unless it bites.
-5. **Race with open UIs.** An open popup holding stale in-memory state can overwrite a just-pulled
+4. **Race with open UIs.** An open popup holding stale in-memory state can overwrite a just-pulled
    blob before `rehydrate` lands. Window is small; revisit if reports appear.
-6. **Blob coupling.** The background reads/writes the persist blob format (`{ state, version }`)
+5. **Blob coupling.** The background reads/writes the persist blob format (`{ state, version }`)
    directly, so future store migrations must be mirrored or the background must refuse to write
    when `version` doesn't match.
-7. **Tombstone growth.** Deleted docs accumulate forever. Negligible for text prompts; a periodic
+6. **Tombstone growth.** Deleted docs accumulate forever. Negligible for text prompts; a periodic
    purge of tombstones older than N days is possible later.
-8. **Firebase SDK size / version.** `firebase/auth/web-extension` requires a recent Firebase v10+/v11
-   release; confirm the chosen version and that the MV3 service worker loads it without
-   `window`/`document` references before committing.
