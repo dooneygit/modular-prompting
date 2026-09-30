@@ -33,6 +33,9 @@ export interface Tab {
   searchQuery: string;
 }
 
+const TYPING_BURST_MS = 1000;
+let lastTypedAt = 0;
+
 function normalizeNodes(nodes: EditorNode[]): EditorNode[] {
   if (nodes.length === 0) {
     return [{ type: "text", id: crypto.randomUUID(), content: "" }];
@@ -235,14 +238,24 @@ export const useAppStore = create<AppState>()(
         }),
 
       updateTextNode: (nodeId, content) =>
-        set((s) => ({
-          editorNodes: s.editorNodes.map((n) =>
-            n.id === nodeId ? { ...n, content } : n
-          ),
-        })),
+        set((s) => {
+          // Snapshot once per typing burst so undo reverts a burst, not a keystroke.
+          const now = Date.now();
+          const newBurst = now - lastTypedAt > TYPING_BURST_MS;
+          lastTypedAt = now;
+          return {
+            undoStack: newBurst
+              ? [...s.undoStack, s.editorNodes].slice(-20)
+              : s.undoStack,
+            editorNodes: s.editorNodes.map((n) =>
+              n.id === nodeId ? { ...n, content } : n
+            ),
+          };
+        }),
 
       undoEditor: () =>
         set((s) => {
+          lastTypedAt = 0;
           if (s.undoStack.length === 0) return s;
           const prev = s.undoStack[s.undoStack.length - 1];
           return {
