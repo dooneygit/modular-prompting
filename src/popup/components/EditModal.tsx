@@ -32,7 +32,7 @@ export function EditModal() {
       onClick={() => { if (!mouseDownInsideRef.current) handleClose(); }}
     >
       <div
-        className="bg-surface-container rounded-xl p-6 w-96 max-h-[80%] border border-outline-variant/20 shadow-2xl"
+        className="bg-surface-container rounded-xl p-6 w-[36rem] max-h-[85%] border border-outline-variant/20 shadow-2xl flex flex-col"
         onMouseDown={(e) => { e.stopPropagation(); mouseDownInsideRef.current = true; }}
         onClick={(e) => e.stopPropagation()}
       >
@@ -51,12 +51,12 @@ export function EditModal() {
         <textarea
           value={content}
           onChange={(e) => setContent(e.target.value)}
-          rows={8}
-          className="w-full bg-surface-container-highest text-on-surface text-sm px-3 py-2 rounded border-none outline-none focus:ring-1 focus:ring-outline resize-none"
+          rows={16}
+          className="w-full flex-1 min-h-0 bg-surface-container-highest text-on-surface text-sm px-3 py-2 rounded border-none outline-none focus:ring-1 focus:ring-outline resize-none"
           placeholder="Prompt content..."
         />
 
-        <div className="flex justify-end gap-2 mt-4">
+        <div className="flex justify-end gap-2 mt-4 shrink-0">
           <button
             onClick={handleClose}
             className="px-4 py-2 text-sm text-on-surface-variant hover:text-on-surface transition-colors rounded-md"

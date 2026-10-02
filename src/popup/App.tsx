@@ -46,6 +46,23 @@ export default function App() {
   );
 
   useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (!(e.ctrlKey || e.metaKey) || e.shiftKey || e.key.toLowerCase() !== "z")
+        return;
+      // Leave native undo alone in other fields (search, edit modal, ...).
+      const target = e.target as HTMLElement;
+      const inOtherField =
+        target.matches("input, textarea, [contenteditable]") &&
+        target.dataset.nodeType !== "text";
+      if (inOtherField) return;
+      e.preventDefault();
+      useAppStore.getState().undoEditor();
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, []);
+
+  useEffect(() => {
     if (!fullscreen) return;
     const onResize = () => setTotalWidth(window.innerWidth);
     window.addEventListener("resize", onResize);
