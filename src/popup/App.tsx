@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useAppStore } from "../store/promptStore";
+import { Icon } from "./components/Icon";
 import { TopBar } from "./components/TopBar";
 import { PromptBrowser } from "./components/PromptBrowser";
 import { EditorBox } from "./components/EditorBox";
@@ -76,9 +77,20 @@ export default function App() {
 
   return (
     <div className={containerClass}>
-      <main className="flex-1 flex flex-col bg-surface min-w-0">
-        <TopBar editorOpen={editorOpen} onToggleEditor={toggleEditorOpen} />
+      <main className="relative flex-1 flex flex-col bg-surface min-w-0">
+        <TopBar />
         <PromptBrowser />
+        <button
+          type="button"
+          onClick={toggleEditorOpen}
+          title={editorOpen ? "Close editor" : "Open editor"}
+          className="absolute right-0 top-1/2 -translate-y-1/2 z-10 flex items-center justify-center w-8 h-12 rounded-l-md bg-surface-container-high text-on-surface-variant hover:text-on-surface border border-r-0 border-outline-variant/20"
+        >
+          <Icon
+            name={editorOpen ? "chevron_right" : "chevron_left"}
+            className="text-[20px]"
+          />
+        </button>
       </main>
       {editorOpen && (
         <>

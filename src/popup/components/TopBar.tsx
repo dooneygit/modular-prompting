@@ -4,12 +4,10 @@ import { FolderDropdown } from "./FolderDropdown";
 import { isFullscreenView, openFullscreenTab } from "../fullscreen";
 
 interface TopBarProps {
-  editorOpen?: boolean;
-  onToggleEditor?: () => void;
   inPage?: boolean;
 }
 
-export function TopBar({ editorOpen, onToggleEditor, inPage }: TopBarProps) {
+export function TopBar({ inPage }: TopBarProps) {
   const {
     tabs,
     activeTabId,
@@ -57,33 +55,15 @@ export function TopBar({ editorOpen, onToggleEditor, inPage }: TopBarProps) {
         <Icon name="add" className="text-[20px]" />
       </button>
 
-      {!inPage && (
-        <div className="flex items-center gap-4 pl-1 text-primary shrink-0">
-          {!fullscreen && (
-            <button
-              type="button"
-              onClick={openFullscreenTab}
-              title="Open in new tab"
-              className="text-on-surface-variant hover:text-on-surface transition-colors"
-            >
-              <Icon name="open_in_new" className="text-[20px]" />
-            </button>
-          )}
-          {onToggleEditor && (
-            <button
-              type="button"
-              onClick={onToggleEditor}
-              className={`transition-colors ${editorOpen ? "text-primary" : "text-on-surface-variant hover:text-on-surface"}`}
-              title={editorOpen ? "Close editor" : "Open editor"}
-            >
-              <Icon name="edit" className="text-[20px]" />
-            </button>
-          )}
-          <Icon
-            name="help_outline"
-            className="text-[20px] cursor-pointer hover:text-on-surface transition-colors"
-          />
-        </div>
+      {!inPage && !fullscreen && (
+        <button
+          type="button"
+          onClick={openFullscreenTab}
+          title="Open in new tab"
+          className="shrink-0 text-on-surface-variant hover:text-on-surface transition-colors"
+        >
+          <Icon name="open_in_new" className="text-[20px]" />
+        </button>
       )}
     </header>
   );
