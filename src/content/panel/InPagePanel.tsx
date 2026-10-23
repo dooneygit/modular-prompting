@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { SideNavBar } from "../../popup/components/SideNavBar";
 import { PromptBrowser } from "../../popup/components/PromptBrowser";
+import { TopBar } from "../../popup/components/TopBar";
 import { EditModal } from "../../popup/components/EditModal";
 import { Icon } from "../../popup/components/Icon";
 import { PanelSplitter } from "../../popup/components/PanelSplitter";
@@ -113,6 +114,7 @@ export function InPagePanel(_props: { adapter: PlatformAdapter }) {
         <SideNavBar width={sideWidth} inPage />
         <PanelSplitter onResize={resizeSide} />
         <main className="flex-1 flex flex-col min-w-0 bg-surface">
+          <TopBar inPage />
           <PromptBrowser />
         </main>
       </div>

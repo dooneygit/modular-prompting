@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useAppStore } from "../store/promptStore";
 import { SideNavBar } from "./components/SideNavBar";
-import { TopNavBar } from "./components/TopNavBar";
+import { TopBar } from "./components/TopBar";
 import { PromptBrowser } from "./components/PromptBrowser";
 import { EditorBox } from "./components/EditorBox";
 import { EditModal } from "./components/EditModal";
@@ -101,7 +101,7 @@ export default function App() {
       <SideNavBar width={leftWidth} />
       <PanelSplitter onResize={resizeLeft} />
       <main className="flex-1 flex flex-col bg-surface min-w-0">
-        <TopNavBar editorOpen={editorOpen} onToggleEditor={toggleEditorOpen} />
+        <TopBar editorOpen={editorOpen} onToggleEditor={toggleEditorOpen} />
         <PromptBrowser />
       </main>
       {editorOpen && (
