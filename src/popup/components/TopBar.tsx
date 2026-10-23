@@ -1,6 +1,7 @@
 import { useAppStore } from "../../store/promptStore";
 import { Icon } from "./Icon";
 import { FolderDropdown } from "./FolderDropdown";
+import { isFullscreenView, openFullscreenTab } from "../fullscreen";
 
 interface TopBarProps {
   editorOpen?: boolean;
@@ -17,6 +18,7 @@ export function TopBar({ editorOpen, onToggleEditor, inPage }: TopBarProps) {
     addPrompt,
     setEditingPromptId,
   } = useAppStore();
+  const fullscreen = isFullscreenView();
 
   const activeTab = tabs.find((t) => t.id === activeTabId);
   const activeView = activeTab?.viewId ?? "all";
@@ -57,6 +59,16 @@ export function TopBar({ editorOpen, onToggleEditor, inPage }: TopBarProps) {
 
       {!inPage && (
         <div className="flex items-center gap-4 pl-1 text-primary shrink-0">
+          {!fullscreen && (
+            <button
+              type="button"
+              onClick={openFullscreenTab}
+              title="Open in new tab"
+              className="text-on-surface-variant hover:text-on-surface transition-colors"
+            >
+              <Icon name="open_in_new" className="text-[20px]" />
+            </button>
+          )}
           {onToggleEditor && (
             <button
               type="button"
