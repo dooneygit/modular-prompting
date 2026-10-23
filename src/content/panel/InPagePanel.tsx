@@ -1,10 +1,8 @@
 import { useEffect, useRef, useState } from "react";
-import { SideNavBar } from "../../popup/components/SideNavBar";
 import { PromptBrowser } from "../../popup/components/PromptBrowser";
 import { TopBar } from "../../popup/components/TopBar";
 import { EditModal } from "../../popup/components/EditModal";
 import { Icon } from "../../popup/components/Icon";
-import { PanelSplitter } from "../../popup/components/PanelSplitter";
 import { useAppStore } from "../../store/promptStore";
 import { openFullscreenTab } from "../../popup/fullscreen";
 import { layoutShift } from "../layout";
@@ -12,20 +10,17 @@ import type { PlatformAdapter } from "../platforms/types";
 
 const MIN_PANEL = 320;
 const MAX_PANEL = 800;
-const MIN_SIDE = 120;
-const MIN_MAIN = 160;
 
 function defaultPanelWidth() {
   return window.innerWidth >= 1024 ? 500 : 460;
 }
 
-// Reuses the popup's library panes (folders + prompt browser) docked against the
+// Reuses the popup's library panes (top bar + prompt browser) docked against the
 // right edge of the host page. Prompt cards are dragged from here onto the chat
 // input; the drop is handled by the document-level drop target.
 export function InPagePanel(_props: { adapter: PlatformAdapter }) {
   const [open, setOpen] = useState(true);
   const [panelWidth, setPanelWidth] = useState(defaultPanelWidth);
-  const [sideWidth, setSideWidth] = useState(160);
   const editingPromptId = useAppStore((s) => s.editingPromptId);
   const panelResizeStartX = useRef<number | null>(null);
 
@@ -55,14 +50,6 @@ export function InPagePanel(_props: { adapter: PlatformAdapter }) {
     window.addEventListener("mouseup", onMouseUp);
   }
 
-  function resizeSide(delta: number) {
-    setSideWidth((w) => {
-      const next = w + delta;
-      if (next < MIN_SIDE || panelWidth - next < MIN_MAIN) return w;
-      return next;
-    });
-  }
-
   if (!open) {
     return (
       <button
@@ -81,7 +68,7 @@ export function InPagePanel(_props: { adapter: PlatformAdapter }) {
       className="fixed right-0 top-0 h-screen flex flex-col bg-surface text-on-surface border-l border-outline-variant/20 font-sans"
       style={{ width: panelWidth }}
     >
-      {/* Left-edge resize handle — absolutely positioned so SideNavBar fills flush to the edge */}
+      {/* Left-edge resize handle — absolutely positioned so the content fills flush to the edge */}
       <div
         onMouseDown={handlePanelEdgeMouseDown}
         style={{ position: "absolute", left: 0, top: 0, width: 4, height: "100%", cursor: "col-resize", zIndex: 10 }}
@@ -110,14 +97,10 @@ export function InPagePanel(_props: { adapter: PlatformAdapter }) {
         </button>
       </header>
 
-      <div className="flex flex-1 min-h-0">
-        <SideNavBar width={sideWidth} inPage />
-        <PanelSplitter onResize={resizeSide} />
-        <main className="flex-1 flex flex-col min-w-0 bg-surface">
-          <TopBar inPage />
-          <PromptBrowser />
-        </main>
-      </div>
+      <main className="flex-1 flex flex-col min-h-0 bg-surface">
+        <TopBar inPage />
+        <PromptBrowser />
+      </main>
 
       {editingPromptId && <EditModal key={editingPromptId} />}
     </div>
