@@ -11,7 +11,11 @@ export function EditModal() {
 
   const [title, setTitle] = useState(prompt?.title ?? "");
   const [content, setContent] = useState(prompt?.content ?? "");
+  const [confirmDiscard, setConfirmDiscard] = useState(false);
   const mouseDownInsideRef = useRef(false);
+
+  const isDirty =
+    title !== (prompt?.title ?? "") || content !== (prompt?.content ?? "");
 
   const handleSave = () => {
     if (prompt) {
@@ -20,6 +24,10 @@ export function EditModal() {
   };
 
   const handleClose = () => {
+    if (isDirty) {
+      setConfirmDiscard(true);
+      return;
+    }
     setEditingPromptId(null);
   };
 
@@ -71,6 +79,54 @@ export function EditModal() {
           </button>
         </div>
       </div>
+
+      {confirmDiscard && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center"
+          style={{ backgroundColor: "rgba(0,0,0,0.6)" }}
+          onMouseDown={(e) => e.stopPropagation()}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div
+            className="w-[380px] rounded-md p-6 flex flex-col gap-5"
+            style={{
+              background: "rgba(37, 38, 38, 0.85)",
+              backdropFilter: "blur(20px)",
+              WebkitBackdropFilter: "blur(20px)",
+              border: "1px solid rgba(72, 72, 72, 0.2)",
+            }}
+          >
+            <div className="flex flex-col gap-1.5">
+              <span
+                className="text-on-surface font-semibold"
+                style={{ fontSize: "1.375rem", letterSpacing: "-0.01em" }}
+              >
+                Discard changes?
+              </span>
+              <p className="text-on-surface-variant text-sm leading-relaxed">
+                You have unsaved changes to this prompt. They will be lost.
+              </p>
+            </div>
+
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setConfirmDiscard(false)}
+                className="px-4 py-1.5 rounded-md text-sm text-primary transition-colors duration-200"
+                style={{ border: "1px solid rgba(72, 72, 72, 0.2)" }}
+              >
+                Keep editing
+              </button>
+              <button
+                onClick={() => setEditingPromptId(null)}
+                className="px-4 py-1.5 rounded-md text-sm font-medium transition-all duration-200"
+                style={{ background: "#ee7d77", color: "#1a0a09" }}
+              >
+                Discard
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
