@@ -10,6 +10,17 @@ export function setApplyingRemote(value: boolean): void {
   applyingRemote = value;
 }
 
+// Snapshots this context itself wrote. chrome.storage.onChanged also fires in
+// the writing context, and rehydrating from such an echo overwrites state the
+// user has changed since the write started (typing fast resets the editor
+// textarea mid-keystroke, which sends the caret to the end).
+const selfWrites = new Set<string>();
+const MAX_TRACKED_SELF_WRITES = 20;
+
+export function isSelfWrite(value: string): boolean {
+  return selfWrites.delete(value);
+}
+
 // Shared persistence backed by chrome.storage.local so the popup and the
 // in-page content script read/write the same data.
 export const chromeStorage: StateStorage = {
@@ -19,6 +30,11 @@ export const chromeStorage: StateStorage = {
   },
   setItem: async (name, value) => {
     if (applyingRemote) return;
+    selfWrites.add(value);
+    if (selfWrites.size > MAX_TRACKED_SELF_WRITES) {
+      const oldest = selfWrites.values().next().value as string;
+      selfWrites.delete(oldest);
+    }
     await chrome.storage.local.set({ [name]: value });
   },
   removeItem: async (name) => {
