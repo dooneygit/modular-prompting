@@ -1,6 +1,7 @@
 import { useAppStore } from "../../store/promptStore";
 import { Icon } from "./Icon";
 import { FolderDropdown } from "./FolderDropdown";
+import { LibraryMenu } from "./LibraryMenu";
 import { isFullscreenView, openFullscreenTab } from "../fullscreen";
 
 interface TopBarProps {
@@ -54,6 +55,8 @@ export function TopBar({ inPage }: TopBarProps) {
       >
         <Icon name="add" className="text-[20px]" />
       </button>
+
+      <LibraryMenu />
 
       {!inPage && !fullscreen && (
         <button

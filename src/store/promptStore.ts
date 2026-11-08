@@ -19,6 +19,11 @@ export interface Prompt {
   favorited: boolean;
 }
 
+export interface LibraryData {
+  folders: Folder[];
+  prompts: Prompt[];
+}
+
 export interface EditorTextNode {
   type: "text";
   id: string;
@@ -74,6 +79,7 @@ interface AppState {
   deletePrompt: (id: string) => void;
   togglePromptFavorite: (id: string) => void;
   touchPrompt: (id: string) => void;
+  importLibrary: (data: LibraryData) => void;
 
   insertContentAtOffset: (charOffset: number, content: string) => void;
   updateTextNode: (nodeId: string, content: string) => void;
@@ -224,6 +230,34 @@ export const useAppStore = create<AppState>()(
             p.id === id ? { ...p, lastUsedAt: Date.now() } : p
           ),
         })),
+
+      importLibrary: ({ folders, prompts }) =>
+        set((s) => {
+          const importRootId = crypto.randomUUID();
+          const newIds = new Map(
+            folders.map((f) => [f.id, crypto.randomUUID()])
+          );
+          return {
+            folders: [
+              ...s.folders,
+              { id: importRootId, name: "Imported", parentId: null },
+              ...folders.map((f) => ({
+                ...f,
+                id: newIds.get(f.id)!,
+                parentId:
+                  f.parentId === null ? importRootId : newIds.get(f.parentId)!,
+              })),
+            ],
+            prompts: [
+              ...s.prompts,
+              ...prompts.map((p) => ({
+                ...p,
+                id: crypto.randomUUID(),
+                folderId: newIds.get(p.folderId)!,
+              })),
+            ],
+          };
+        }),
 
       insertContentAtOffset: (charOffset, content) =>
         set((s) => {
