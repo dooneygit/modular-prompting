@@ -4,8 +4,6 @@ A productivity browser extension that functions as a personal prompt component l
  
 Users organize reusable prompt fragments into a folder-based library, then drag and drop those fragments into an editor to compose, reorder, and assemble complete prompts from smaller, interchangeable parts.
 
-See `DESIGN.md` for UI/UX decisions and visual direction.
-
 # Coding Guidelines
 
 Behavioral overlay for an AI coding agent. Project-specific commands, stack,
