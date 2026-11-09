@@ -58,7 +58,7 @@ export function PromptCard({ prompt }: { prompt: Prompt }) {
         isDragging ? "opacity-50" : ""
       }`}
     >
-      <div className="flex items-start gap-2">
+      <div className="flex items-start">
         <button
           type="button"
           onClick={() => setEditingPromptId(prompt.id)}
@@ -72,7 +72,7 @@ export function PromptCard({ prompt }: { prompt: Prompt }) {
             {prompt.content}
           </p>
         </button>
-        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0 self-start">
+        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0 self-start w-0 overflow-hidden group-hover:w-auto group-hover:ml-2">
           <button
             type="button"
             aria-pressed={favorited}
