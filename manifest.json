@@ -2,6 +2,7 @@
   "manifest_version": 3,
   "name": "Quick Prompting",
   "version": "0.1.0",
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAo5Aw22HVuXHH3yXJh0HabIpFSLCS+6Ve45KA9n1TFTAtELSR+LUumTpg1y+qHkbM035B91RJABZmzOzVHE9PjCGwuK6yg+QxVr+uA5nZq/CBWJrD96pp0FlOycsDIyyDtYujmS0gOXlY2GNtT+IlevxasdcEccGnALzNz/TdK4VxhRzduZ/5HtM/rG9Z1uj9yzWeYoecY7cwatdNJ+lnKyysZbJ2jQAVLVSmGZyEko+KJ3j0kJW9neyoaYBS30/wh83Li85x3gLt65nOcq9QG5GHv/Eqlx0fd7KvcpOG6KWa60mq/uWJ9dyjTVchE3CNyXyeyKs76gNQEmrWayQxvwIDAQAB",
   "description": "Save, organize, and reuse your prompts",
   "permissions": ["storage", "clipboardWrite"],
   "action": {

@@ -1,4 +1,5 @@
 import type { Folder, LibraryData, Prompt } from "./promptStore";
+import { buildItems, itemBytes } from "./syncItems";
 
 const FORMAT_VERSION = 1;
 const INVALID_FILE = "This file isn't a valid prompt library export.";
@@ -103,12 +104,26 @@ export function parseLibrary(text: string): LibraryData {
   return { folders, prompts };
 }
 
-// The store persists as one JSON string, so a write over quota would fail
-// after the import already looked successful in memory.
+// A write over quota would fail after the import already looked successful in
+// memory. The extra folder stands in for the "Imported" root the import adds.
 export async function assertFitsInStorage(data: LibraryData): Promise<void> {
-  const used = await chrome.storage.local.getBytesInUse(null);
-  const added = new Blob([JSON.stringify(JSON.stringify(data))]).size;
-  if (used + added > chrome.storage.local.QUOTA_BYTES) {
+  const { sync } = chrome.storage;
+  const [usedBytes, stored] = await Promise.all([
+    sync.getBytesInUse(null),
+    sync.get(null),
+  ]);
+  const importRoot = { id: crypto.randomUUID(), name: "Imported", parentId: null };
+  const items = buildItems({
+    folders: [...data.folders, importRoot],
+    prompts: data.prompts,
+  });
+  const sizes = [...items].map(([key, json]) => itemBytes(key, json));
+  const addedBytes = sizes.reduce((total, size) => total + size, 0);
+  if (
+    sizes.some((size) => size > sync.QUOTA_BYTES_PER_ITEM) ||
+    usedBytes + addedBytes > sync.QUOTA_BYTES ||
+    Object.keys(stored).length + items.size > sync.MAX_ITEMS
+  ) {
     throw new Error("Not enough storage space to import this file.");
   }
 }

@@ -16,6 +16,7 @@ export function TopBar({ inPage }: TopBarProps) {
     setSearchQuery,
     addPrompt,
     setEditingPromptId,
+    saveFailed,
   } = useAppStore();
   const fullscreen = isFullscreenView();
 
@@ -30,6 +31,7 @@ export function TopBar({ inPage }: TopBarProps) {
   };
 
   return (
+    <>
     <header className="flex items-center gap-3 px-4 w-full h-14 bg-surface border-b border-outline-variant/10 shrink-0">
       <FolderDropdown />
 
@@ -69,5 +71,15 @@ export function TopBar({ inPage }: TopBarProps) {
         </button>
       )}
     </header>
+    {saveFailed && (
+      <p
+        role="alert"
+        className="px-4 py-2 shrink-0 text-xs bg-error-container text-on-error-container"
+      >
+        Your latest changes couldn't be saved. Sync storage may be full, so
+        delete some prompts or folders to free up space.
+      </p>
+    )}
+    </>
   );
 }
