@@ -64,6 +64,7 @@ interface AppState {
   leftPanelWidth: number | null;
   rightPanelWidth: number | null;
   editorOpen: boolean;
+  saveFailed: boolean;
 
   addFolder: (name: string, parentId?: string | null) => string;
   renameFolder: (id: string, name: string) => void;
@@ -119,6 +120,7 @@ export const useAppStore = create<AppState>()(
       leftPanelWidth: null,
       rightPanelWidth: null,
       editorOpen: false,
+      saveFailed: false,
 
       addFolder: (name, parentId = null) => {
         const id = crypto.randomUUID();
