@@ -68,7 +68,7 @@ export function PromptCard({ prompt }: { prompt: Prompt }) {
           <h3 className="text-sm font-semibold text-on-surface truncate mb-2">
             {prompt.title}
           </h3>
-          <p className="text-xs text-on-surface-variant line-clamp-1 leading-relaxed">
+          <p className="text-xs text-on-surface-variant line-clamp-3 min-h-[3lh] leading-relaxed">
             {prompt.content}
           </p>
         </button>
